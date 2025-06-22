@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import Sidebar from "../Compontents/Sidebar";
+import { Menu } from "lucide-react"; // You can use any icon library or replace with text/icon
 
 const AllBanners = () => {
   const [banners, setBanners] = useState([]);
@@ -7,6 +8,9 @@ const AllBanners = () => {
   const [uploading, setUploading] = useState(false);
   const [showModal, setShowModal] = useState(false);
   const [newBanner, setNewBanner] = useState({ image: "", url: "", expiry: "" });
+  const [filterStatus, setFilterStatus] = useState("all");
+  const [searchTerm, setSearchTerm] = useState("");
+  const [sidebarOpen, setSidebarOpen] = useState(false); // sidebar toggle state
 
   const fetchBanners = async () => {
     try {
@@ -40,7 +44,6 @@ const AllBanners = () => {
     try {
       setUploading(true);
 
-      // Step 1: Upload image to Cloudinary
       const formData = new FormData();
       formData.append("file", newBanner.image);
       formData.append("upload_preset", "blackstome");
@@ -53,7 +56,6 @@ const AllBanners = () => {
       const cloudData = await cloudRes.json();
       if (!cloudData.secure_url) throw new Error("Cloudinary upload failed.");
 
-      // Step 2: Upload metadata to backend
       const response = await fetch("https://www.blackstonevoicechatroom.online/admin/add/banner", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -82,43 +84,96 @@ const AllBanners = () => {
     }
   };
 
+  const filteredBanners = banners.filter((banner) => {
+    const matchesStatus =
+      filterStatus === "all" ? true : banner.status === filterStatus;
+    const matchesSearch = banner.url.toLowerCase().includes(searchTerm.toLowerCase());
+    return matchesStatus && matchesSearch;
+  });
+
   return (
-    <div className="flex bg-[#121212] min-h-screen text-white">
-      <Sidebar />
-      <div className="flex-1 p-4 md:p-6">
-        <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
-          <h1 className="text-2xl font-semibold">All Banners</h1>
+    <div className="flex h-screen overflow-hidden bg-[#121212] text-white relative">
+      {/* Sidebar */}
+      <div
+        className={`fixed inset-y-0 left-0 z-30 w-64 bg-[#1f1f1f] transform ${
+          sidebarOpen ? "translate-x-0" : "-translate-x-full"
+        } transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:flex`}
+      >
+        <Sidebar />
+      </div>
+
+      {/* Overlay for mobile */}
+      {sidebarOpen && (
+        <div
+          className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        ></div>
+      )}
+
+      {/* Main Content */}
+      <div className="flex-1 overflow-auto p-4 md:p-6">
+        {/* Top bar */}
+        <div className="flex items-center justify-between mb-4">
+          {/* Toggle Button (Mobile only) */}
           <button
-            className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-1 px-4 rounded"
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden text-white focus:outline-none"
+          >
+            <Menu size={28} />
+          </button>
+          <h1 className="text-2xl font-semibold">All Banners</h1>
+        </div>
+
+        {/* Filters */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4">
+          <div className="flex flex-col sm:flex-row gap-2">
+            <input
+              type="text"
+              placeholder="Search by URL..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="px-3 py-2 rounded bg-[#1f1f1f] border border-gray-700 text-white text-sm"
+            />
+            <select
+              value={filterStatus}
+              onChange={(e) => setFilterStatus(e.target.value)}
+              className="px-3 py-2 rounded bg-[#1f1f1f] border border-gray-700 text-white text-sm"
+            >
+              <option value="all">All</option>
+              <option value="active">Active</option>
+              <option value="inactive">Inactive</option>
+            </select>
+          </div>
+          <button
+            className="bg-yellow-500 hover:bg-yellow-600 text-black font-semibold py-2 px-4 rounded text-sm"
             onClick={() => setShowModal(true)}
           >
             Upload
           </button>
         </div>
 
-        {loading ? (
-          <div className="flex justify-center items-center py-10">
-            <svg className="animate-spin h-6 w-6 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-            </svg>
-            <span className="ml-3 text-white">Loading banners...</span>
-          </div>
-        ) : (
-          <div className="overflow-x-auto border border-gray-700 rounded-lg">
-            <table className="min-w-full text-sm text-center">
-              <thead className="bg-[#1f1f1f] text-gray-300">
+        {/* Table */}
+        <div className="overflow-x-auto border border-gray-700 rounded-lg">
+          <table className="min-w-full text-sm text-center">
+            <thead className="bg-[#1f1f1f] text-gray-300">
+              <tr>
+                <th className="p-2 border border-gray-700">#</th>
+                <th className="p-2 border border-gray-700">Image</th>
+                <th className="p-2 border border-gray-700">URL</th>
+                <th className="p-2 border border-gray-700">Status</th>
+                <th className="p-2 border border-gray-700">Expiry</th>
+                <th className="p-2 border border-gray-700">Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredBanners.length === 0 ? (
                 <tr>
-                  <th className="p-2 border border-gray-700">#</th>
-                  <th className="p-2 border border-gray-700">Image</th>
-                  <th className="p-2 border border-gray-700">URL</th>
-                  <th className="p-2 border border-gray-700">Status</th>
-                  <th className="p-2 border border-gray-700">Expiry</th>
-                  <th className="p-2 border border-gray-700">Date</th>
+                  <td colSpan="6" className="p-4 text-gray-400">
+                    No banners found.
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {banners.map((banner, index) => (
+              ) : (
+                filteredBanners.map((banner, index) => (
                   <tr key={banner._id} className="hover:bg-[#2a2a2a] transition">
                     <td className="p-2 border border-gray-700">{index + 1}</td>
                     <td className="p-2 border border-gray-700">
@@ -128,10 +183,10 @@ const AllBanners = () => {
                         className="h-10 w-20 object-cover mx-auto rounded"
                       />
                     </td>
-                    <td className="p-2 border border-gray-700 break-words max-w-[200px]">
+                    <td className="p-2 border border-gray-700 break-all max-w-[200px]">
                       <a
                         href={banner.url}
-                        className="text-blue-400 underline break-all"
+                        className="text-blue-400 underline"
                         target="_blank"
                         rel="noreferrer"
                       >
@@ -153,13 +208,13 @@ const AllBanners = () => {
                       {new Date(banner.createdAt).toLocaleDateString()}
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
 
-        {/* Modal */}
+        {/* Modal for Upload */}
         {showModal && (
           <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
             <div className="bg-[#1f1f1f] p-6 rounded-lg w-[90%] max-w-md border border-gray-700">
@@ -196,14 +251,7 @@ const AllBanners = () => {
                   onClick={handleUpload}
                   disabled={uploading}
                 >
-                  {uploading ? (
-                    <svg className="animate-spin h-5 w-5 text-black" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" />
-                    </svg>
-                  ) : (
-                    "Upload"
-                  )}
+                  {uploading ? "Uploading..." : "Upload"}
                 </button>
               </div>
             </div>
