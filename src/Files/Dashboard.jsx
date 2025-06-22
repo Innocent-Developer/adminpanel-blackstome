@@ -1,7 +1,5 @@
 import { useEffect, useState } from "react";
-import Sidebar from "../Compontents/Sidebar";
 import { FaUsers, FaCoins, FaGem, FaBuilding } from "react-icons/fa";
-import { Menu, X } from "lucide-react";
 
 export default function Dashboard() {
   const [stats, setStats] = useState({
@@ -10,8 +8,6 @@ export default function Dashboard() {
     diamond: 0,
     agency: 0,
   });
-
-  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   useEffect(() => {
     async function fetchData() {
@@ -43,39 +39,23 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-[#121212] text-white relative">
-      {/* Sidebar - responsive toggle */}
-      <div className="md:hidden absolute top-0 left-0 w-full z-50 bg-[#1a1a1a] flex items-center justify-between px-4 py-3">
-        <h2 className="text-lg font-bold">King Maker</h2>
-        <button onClick={() => setSidebarOpen(!sidebarOpen)}>
-          {sidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+    <div className=" bg-[#121212] text-white p-6 mt-10">
+      <div className="flex justify-between items-center mb-6">
+        <h1 className="text-2xl font-semibold">Dashboard</h1>
+        <div className="rounded-full h-10 w-10 bg-gray-500"></div>
       </div>
 
-      {/* Sidebar content */}
-      <div className={`z-40 md:static ${sidebarOpen ? "block fixed top-12 left-0" : "hidden"} md:block`}>
-        <Sidebar />
-      </div>
-
-      {/* Main content */}
-      <main className="flex-1 p-6 mt-14 md:mt-0">
-        <div className="flex justify-between items-center mb-6">
-          <h1 className="text-2xl font-semibold">Dashboard</h1>
-          <div className="rounded-full h-10 w-10 bg-gray-500"></div>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {cards.map((card, idx) => (
-            <div key={idx} className={`p-4 rounded-lg shadow flex items-center gap-4 ${card.color}`}>
-              <div className="p-2 bg-gray-800 rounded-full">{card.icon}</div>
-              <div>
-                <p className="text-sm text-gray-400">{card.label}</p>
-                <h2 className="text-2xl font-bold">{card.value}</h2>
-              </div>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+        {cards.map((card, idx) => (
+          <div key={idx} className={`p-4 rounded-lg shadow flex items-center gap-4 ${card.color}`}>
+            <div className="p-2 bg-gray-800 rounded-full">{card.icon}</div>
+            <div>
+              <p className="text-sm text-gray-400">{card.label}</p>
+              <h2 className="text-2xl font-bold">{card.value}</h2>
             </div>
-          ))}
-        </div>
-      </main>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

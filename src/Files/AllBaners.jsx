@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../Compontents/Sidebar";
+
 import { Menu } from "lucide-react"; // You can use any icon library or replace with text/icon
 
 const AllBanners = () => {
@@ -93,22 +93,6 @@ const AllBanners = () => {
 
   return (
     <div className="flex h-screen overflow-hidden bg-[#121212] text-white relative">
-      {/* Sidebar */}
-      <div
-        className={`fixed inset-y-0 left-0 z-30 w-64 bg-[#1f1f1f] transform ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } transition-transform duration-300 ease-in-out md:relative md:translate-x-0 md:flex`}
-      >
-        <Sidebar />
-      </div>
-
-      {/* Overlay for mobile */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-20 bg-black bg-opacity-50 md:hidden"
-          onClick={() => setSidebarOpen(false)}
-        ></div>
-      )}
 
       {/* Main Content */}
       <div className="flex-1 overflow-auto p-4 md:p-6">

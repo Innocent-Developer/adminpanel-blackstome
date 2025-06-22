@@ -12,11 +12,12 @@ import WithdrawsRequest from "./Files/Withdraws/Request.jsx";
 import WithdrawApproval from "./Files/Withdraws/ApproveWithdraws.jsx";
 import AllFeedback from "./Files/FeedBack.jsx";
 import AllBanners from "./Files/AllBaners.jsx";
+import ProtectedLayout from "./Compontents/ProtectedLayout.jsx"; // Adjust path if needed
+import SetCoinPrice from "./Files/CoinPrice.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
-  // Check for token on app load
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsAuthenticated(!!token);
@@ -25,6 +26,7 @@ function App() {
   return (
     <Router>
       <Routes>
+        {/* Public Login Route */}
         <Route
           path="/"
           element={
@@ -35,30 +37,66 @@ function App() {
             )
           }
         />
+
+        {/* Authenticated Routes wrapped with Sidebar */}
         <Route
           path="/dashboard"
-          element={isAuthenticated ? <Dashboard /> : <Navigate to="/" />}
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <Dashboard />
+            </ProtectedLayout>
+          }
         />
         <Route
           path="/users"
-          element={isAuthenticated ? <Users /> : <Navigate to="/" />}
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <Users />
+            </ProtectedLayout>
+          }
         />
         <Route
           path="/withdraws/requests"
-          element={isAuthenticated ? <WithdrawsRequest /> : <Navigate to="/" />}
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <WithdrawsRequest />
+            </ProtectedLayout>
+          }
         />
         <Route
           path="/Approve-withdraw"
-          element={isAuthenticated ? <WithdrawApproval /> : <Navigate to="/" />}
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <WithdrawApproval />
+            </ProtectedLayout>
+          }
         />
         <Route
           path="/feedback"
-          element={isAuthenticated ? <AllFeedback /> : <Navigate to="/" />}
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <AllFeedback />
+            </ProtectedLayout>
+          }
         />
         <Route
           path="/Banner"
-          element={isAuthenticated ? <AllBanners /> : <Navigate to="/" />}
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <AllBanners />
+            </ProtectedLayout>
+          }
         />
+        <Route
+          path="/coin-price"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <SetCoinPrice />
+            </ProtectedLayout>
+          }
+        />
+
+        {/* Redirect all other paths */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>

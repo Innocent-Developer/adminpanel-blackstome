@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import Sidebar from "../Compontents/Sidebar";
 
 export default function Users() {
   const [users, setUsers] = useState([]);
@@ -91,74 +90,70 @@ export default function Users() {
   );
 
   return (
-    <div className="flex flex-col md:flex-row min-h-screen bg-[#121212] text-white">
-      <Sidebar />
+    <div className="min-h-screen bg-[#121212] text-white p-4 sm:p-6">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
+        <h1 className="text-2xl font-semibold">Users</h1>
+        <input
+          type="text"
+          placeholder="Search user by ID, name, phone"
+          className="bg-[#1f1f1f] text-white px-4 py-2 rounded-md w-full sm:w-80 border border-gray-700"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
 
-      <main className="flex-1 p-4 sm:p-6 overflow-auto">
-        <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-          <h1 className="text-2xl font-semibold">Users</h1>
-          <input
-            type="text"
-            placeholder="Search user by ID, name, phone"
-            className="bg-[#1f1f1f] text-white px-4 py-2 rounded-md w-full sm:w-80 border border-gray-700"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
-
-        <div className="overflow-x-auto border border-gray-800 rounded-lg">
-          <table className="min-w-full table-auto text-sm">
-            <thead className="bg-[#1f1f1f] text-gray-400 uppercase">
-              <tr>
-                <th className="px-4 py-3 text-left">#</th>
-                <th className="px-4 py-3 text-left">Name</th>
-                <th className="px-4 py-3 text-left">UID</th>
-                <th className="px-4 py-3 text-left">Gold</th>
-                <th className="px-4 py-3 text-left">Diamond</th>
-                <th className="px-4 py-3 text-left">Email</th>
-                <th className="px-4 py-3 text-left">Phone</th>
-                <th className="px-4 py-3 text-left">Blocked</th>
-                <th className="px-4 py-3 text-left">Actions</th>
+      <div className="overflow-x-auto border border-gray-800 rounded-lg">
+        <table className="min-w-full table-auto text-sm">
+          <thead className="bg-[#1f1f1f] text-gray-400 uppercase">
+            <tr>
+              <th className="px-4 py-3 text-left">#</th>
+              <th className="px-4 py-3 text-left">Name</th>
+              <th className="px-4 py-3 text-left">UID</th>
+              <th className="px-4 py-3 text-left">Gold</th>
+              <th className="px-4 py-3 text-left">Diamond</th>
+              <th className="px-4 py-3 text-left">Email</th>
+              <th className="px-4 py-3 text-left">Phone</th>
+              <th className="px-4 py-3 text-left">Blocked</th>
+              <th className="px-4 py-3 text-left">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filteredUsers.map((user, index) => (
+              <tr key={user._id} className="border-b border-gray-700 hover:bg-[#2a2a2a]">
+                <td className="px-4 py-2">{index + 1}</td>
+                <td className="px-4 py-2">{user.name || "N/A"}</td>
+                <td className="px-4 py-2">{user.ui_id || "N/A"}</td>
+                <td className="px-4 py-2">{user.gold || 0}</td>
+                <td className="px-4 py-2">{user.diamond || 0}</td>
+                <td className="px-4 py-2 max-w-[150px] truncate">{user.email || "N/A"}</td>
+                <td className="px-4 py-2">{user.phoneNumber || "N/A"}</td>
+                <td className="px-4 py-2 text-red-500">{user.isBlock ? "true" : "false"}</td>
+                <td className="px-4 py-2 flex flex-col gap-2 sm:flex-row">
+                  <button
+                    onClick={() => openEditModal(user)}
+                    className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md"
+                  >
+                    Edit
+                  </button>
+                  <button
+                    onClick={() => handleDeleteUser(user.ui_id)}
+                    className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-md"
+                  >
+                    Delete
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody>
-              {filteredUsers.map((user, index) => (
-                <tr key={user._id} className="border-b border-gray-700 hover:bg-[#2a2a2a]">
-                  <td className="px-4 py-2">{index + 1}</td>
-                  <td className="px-4 py-2">{user.name || "N/A"}</td>
-                  <td className="px-4 py-2">{user.ui_id || "N/A"}</td>
-                  <td className="px-4 py-2">{user.gold || 0}</td>
-                  <td className="px-4 py-2">{user.diamond || 0}</td>
-                  <td className="px-4 py-2 max-w-[150px] truncate">{user.email || "N/A"}</td>
-                  <td className="px-4 py-2">{user.phoneNumber || "N/A"}</td>
-                  <td className="px-4 py-2 text-red-500">{user.isBlock ? "true" : "false"}</td>
-                  <td className="px-4 py-2 flex flex-col gap-2 sm:flex-row">
-                    <button
-                      onClick={() => openEditModal(user)}
-                      className="bg-blue-600 hover:bg-blue-700 text-white text-xs px-3 py-1 rounded-md"
-                    >
-                      Edit
-                    </button>
-                    <button
-                      onClick={() => handleDeleteUser(user.ui_id)}
-                      className="bg-red-600 hover:bg-red-700 text-white text-xs px-3 py-1 rounded-md"
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))}
-              {filteredUsers.length === 0 && (
-                <tr>
-                  <td colSpan="9" className="text-center py-4 text-gray-400">
-                    No users found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </main>
+            ))}
+            {filteredUsers.length === 0 && (
+              <tr>
+                <td colSpan="9" className="text-center py-4 text-gray-400">
+                  No users found.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
       {/* Edit Modal */}
       {showEditModal && (
@@ -195,7 +190,6 @@ export default function Users() {
               onChange={(e) => setFormData({ ...formData, diamond: Number(e.target.value) })}
             />
 
-            {/* Block Toggle Button */}
             <button
               onClick={() => setFormData({ ...formData, isBlocked: !formData.isBlocked })}
               className={`w-full px-4 py-2 rounded text-white ${

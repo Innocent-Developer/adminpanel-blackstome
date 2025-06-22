@@ -1,5 +1,4 @@
 import React, { useEffect, useState } from "react";
-import Sidebar from "../Compontents/Sidebar";
 
 const maskEmail = (email) => {
   const [user, domain] = email.split("@");
@@ -48,15 +47,16 @@ const FeedBack = () => {
   }, []);
 
   return (
-    <div className="flex bg-[#121212] min-h-screen text-white">
-      <Sidebar />
-      <div className="flex-1 p-4 md:p-6">
-        <h2 className="text-xl md:text-2xl font-bold mb-6">Feedback List</h2>
+    <div className="flex flex-col md:flex-row bg-[#121212] min-h-screen text-white">
+
+      <main className="flex-1 p-4 md:p-6 overflow-x-auto">
+        <h2 className="text-2xl font-bold mb-6">Feedback List</h2>
+
         {loading ? (
-          <p>Loading...</p>
+          <p className="text-center">Loading...</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full border border-gray-700">
+          <div className="w-full overflow-x-auto">
+            <table className="min-w-[900px] w-full border border-gray-700 text-sm md:text-base">
               <thead className="bg-[#1f1f1f]">
                 <tr>
                   <th className="px-4 py-2 border-b border-gray-700 text-left">Name</th>
@@ -71,18 +71,18 @@ const FeedBack = () => {
               </thead>
               <tbody>
                 {feedback.map((fb) => (
-                  <tr key={fb._id} className="hover:bg-[#2a2a2a]">
+                  <tr key={fb._id} className="hover:bg-[#2a2a2a] transition-colors">
                     <td className="px-4 py-3">{fb.name}</td>
                     <td className="px-4 py-3">{fb.uid}</td>
                     <td className="px-4 py-3 break-all">{maskEmail(fb.email)}</td>
                     <td className="px-4 py-3">{fb.problemType}</td>
-                    <td className="px-4 py-3">{fb.description}</td>
+                    <td className="px-4 py-3 max-w-xs break-words">{fb.description}</td>
                     <td className="px-4 py-3">
                       {fb.image && (
                         <img
                           src={fb.image}
                           alt="feedback"
-                          className="w-16 h-16 object-cover rounded border border-gray-700"
+                          className="w-12 h-12 md:w-16 md:h-16 object-cover rounded border border-gray-700"
                         />
                       )}
                     </td>
@@ -120,7 +120,7 @@ const FeedBack = () => {
             </table>
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 };

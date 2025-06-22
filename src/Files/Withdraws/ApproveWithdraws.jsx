@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import Sidebar from "./Sidebar";
+
 
 export default function WithdrawApproval() {
   const [withdraws, setWithdraws] = useState([]);
@@ -24,7 +24,7 @@ export default function WithdrawApproval() {
       const res = await fetch("https://www.blackstonevoicechatroom.online/admin/approve/withdrawal", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({id: withdrawalId}),
+        body: JSON.stringify({ id: withdrawalId }),
       });
 
       const result = await res.json();
@@ -46,46 +46,45 @@ export default function WithdrawApproval() {
   }, []);
 
   return (
-    <div className="flex min-h-screen bg-[#121212] text-white">
-      <Sidebar />
-      <main className="flex-1 p-6">
-        <h1 className="text-2xl font-semibold mb-6">Withdrawal Requests</h1>
+    <div className="flex flex-col md:flex-row min-h-screen bg-[#121212] text-white">
+      <main className="flex-1 p-4 sm:p-6 overflow-x-auto">
+        <h1 className="text-xl sm:text-2xl font-semibold mb-4 sm:mb-6">Withdrawal Requests</h1>
 
         {loading ? (
           <div className="text-center py-10">Loading...</div>
         ) : (
-          <div className="overflow-auto rounded-lg border border-gray-800">
-            <table className="min-w-full table-auto">
-              <thead className="bg-[#1f1f1f] text-sm text-gray-400 uppercase">
+          <div className="overflow-x-auto rounded-lg border border-gray-800">
+            <table className="min-w-[900px] w-full table-auto text-sm">
+              <thead className="bg-[#1f1f1f] text-gray-400 uppercase text-xs sm:text-sm">
                 <tr>
-                  <th className="px-4 py-3 text-left">#</th>
-                  <th className="px-4 py-3 text-left">User ID</th>
-                  <th className="px-4 py-3 text-left">Amount (PKR)</th>
-                  <th className="px-4 py-3 text-left">Account Name</th>
-                  <th className="px-4 py-3 text-left">Account Number</th>
-                  <th className="px-4 py-3 text-left">Bank</th>
-                  <th className="px-4 py-3 text-left">Status</th>
-                  <th className="px-4 py-3 text-left">Requested On</th>
-                  <th className="px-4 py-3 text-left">Actions</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">#</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">User ID</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Amount (PKR)</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Account Name</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Account Number</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Bank</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Status</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Requested On</th>
+                  <th className="px-3 sm:px-4 py-2 sm:py-3 text-left">Actions</th>
                 </tr>
               </thead>
-              <tbody className="text-sm">
+              <tbody>
                 {withdraws.map((item, index) => (
                   <tr
                     key={item._id}
                     className="border-b border-gray-700 hover:bg-[#2a2a2a]"
                   >
-                    <td className="px-4 py-2">{index + 1}</td>
-                    <td className="px-4 py-2">{item.ui_id}</td>
-                    <td className="px-4 py-2">{item.amount}</td>
-                    <td className="px-4 py-2">{item.accountName}</td>
-                    <td className="px-4 py-2">{item.accountNumber}</td>
-                    <td className="px-4 py-2">{item.bankName}</td>
-                    <td className="px-4 py-2 capitalize">{item.status}</td>
-                    <td className="px-4 py-2">
+                    <td className="px-3 sm:px-4 py-2">{index + 1}</td>
+                    <td className="px-3 sm:px-4 py-2 break-words">{item.ui_id}</td>
+                    <td className="px-3 sm:px-4 py-2">{item.amount}</td>
+                    <td className="px-3 sm:px-4 py-2">{item.accountName}</td>
+                    <td className="px-3 sm:px-4 py-2">{item.accountNumber}</td>
+                    <td className="px-3 sm:px-4 py-2">{item.bankName}</td>
+                    <td className="px-3 sm:px-4 py-2 capitalize">{item.status}</td>
+                    <td className="px-3 sm:px-4 py-2">
                       {new Date(item.request_date).toLocaleString()}
                     </td>
-                    <td className="px-4 py-2">
+                    <td className="px-3 sm:px-4 py-2">
                       {item.status === "pending" ? (
                         <button
                           onClick={() => handleApprove(item._id)}

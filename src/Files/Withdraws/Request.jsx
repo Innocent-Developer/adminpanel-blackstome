@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import Sidebar from "./Sidebar";
 
 export default function WithdrawsRequest() {
   const [withdraws, setWithdraws] = useState([]);
@@ -38,7 +37,6 @@ export default function WithdrawsRequest() {
 
   return (
     <div className="flex flex-col md:flex-row min-h-screen bg-[#121212] text-white">
-      <Sidebar />
 
       <main className="flex-1 p-4 sm:p-6 overflow-auto">
         <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
