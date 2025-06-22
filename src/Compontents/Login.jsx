@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import axios from "axios";
+import { useNavigate } from "react-router-dom";
 
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const navigation = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +37,7 @@ const Login = () => {
         alert("Admin login successful.");
         // Redirect or navigate to dashboard
         // e.g., window.location.href = "/admin-dashboard";
+        navigation("/dashboard");
       } else {
         setError("Access denied. Only admin can log in.");
       }
