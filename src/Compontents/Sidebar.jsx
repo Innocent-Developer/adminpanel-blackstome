@@ -27,7 +27,7 @@ import { FaArrowRightFromBracket } from "react-icons/fa6";
 const menuItems = [
   { label: "Wallet", icon: Wallet },
   { label: "Charge System", icon: Star },
-  { label: "AdminMassege", icon: MessageCircle },
+  { label: "Admin Massege", icon: MessageCircle },
   { label: "Banner", icon: Image },
   { label: "Coin Price", icon: Trophy },
   { label: "Sales", icon: Package },

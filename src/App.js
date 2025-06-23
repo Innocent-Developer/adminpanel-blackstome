@@ -14,6 +14,7 @@ import AllFeedback from "./Files/FeedBack.jsx";
 import AllBanners from "./Files/AllBaners.jsx";
 import ProtectedLayout from "./Compontents/ProtectedLayout.jsx"; // Adjust path if needed
 import SetCoinPrice from "./Files/CoinPrice.jsx";
+import AdminMessage from "./Files/OfficalMassege.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -92,6 +93,14 @@ function App() {
           element={
             <ProtectedLayout isAuthenticated={isAuthenticated}>
               <SetCoinPrice />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/admin-massege"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <AdminMessage />
             </ProtectedLayout>
           }
         />
