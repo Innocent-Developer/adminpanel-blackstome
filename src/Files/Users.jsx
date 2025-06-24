@@ -5,12 +5,15 @@ export default function Users() {
   const [searchTerm, setSearchTerm] = useState("");
   const [showEditModal, setShowEditModal] = useState(false);
   const [editUser, setEditUser] = useState(null);
+  const [avatarFile, setAvatarFile] = useState(null);
+
   const [formData, setFormData] = useState({
     name: "",
     phoneNumber: "",
     gold: 0,
     diamond: 0,
     isBlocked: false,
+    avatarUrl: "",
   });
 
   useEffect(() => {
@@ -25,6 +28,69 @@ export default function Users() {
     }
     fetchUsers();
   }, []);
+
+  const openEditModal = (user) => {
+    setEditUser(user);
+    setFormData({
+      name: user.name || "",
+      phoneNumber: user.phoneNumber || "",
+      gold: user.gold || 0,
+      diamond: user.diamond || 0,
+      isBlocked: user.isBlocked || false,
+      avatarUrl: user.avatarUrl || "",
+    });
+    setShowEditModal(true);
+  };
+
+  const handleUpdateUser = async () => {
+    try {
+      let avatarUrl = formData.avatarUrl;
+
+      // Upload to Cloudinary if avatarFile is selected
+      if (avatarFile) {
+        const cloudFormData = new FormData();
+        cloudFormData.append("file", avatarFile);
+        cloudFormData.append("upload_preset", "blackstome");
+
+        const cloudRes = await fetch("https://api.cloudinary.com/v1_1/dha65z0gy/image/upload", {
+          method: "POST",
+          body: cloudFormData,
+        });
+
+        const cloudData = await cloudRes.json();
+        if (!cloudData.secure_url) throw new Error("Cloudinary upload failed.");
+        avatarUrl = cloudData.secure_url;
+      }
+
+      // Send update request
+      const response = await fetch("https://www.blackstonevoicechatroom.online/update-user", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          id: editUser._id,
+          updateData: {
+            name: formData.name,
+            phoneNumber: formData.phoneNumber,
+            gold: formData.gold,
+            diamond: formData.diamond,
+            isBlocked: formData.isBlocked,
+            avatarUrl: avatarUrl,
+          },
+        }),
+      });
+
+      if (response.ok) {
+        alert("User updated successfully");
+        setShowEditModal(false);
+        window.location.reload();
+      } else {
+        alert("Failed to update user");
+      }
+    } catch (error) {
+      console.error("Update error:", error);
+      alert("Error updating user");
+    }
+  };
 
   const handleDeleteUser = async (uid) => {
     if (!window.confirm("Are you sure you want to delete this user?")) return;
@@ -44,42 +110,6 @@ export default function Users() {
     } catch (err) {
       console.error("Delete error:", err);
       alert("Error deleting user");
-    }
-  };
-
-  const openEditModal = (user) => {
-    setEditUser(user);
-    setFormData({
-      name: user.name || "",
-      phoneNumber: user.phoneNumber || "",
-      gold: user.gold || 0,
-      diamond: user.diamond || 0,
-      isBlocked: user.isBlocked || false,
-    });
-    setShowEditModal(true);
-  };
-
-  const handleUpdateUser = async () => {
-    try {
-      const response = await fetch("https://www.blackstonevoicechatroom.online/update-user", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          id: editUser._id,
-          updateData: formData,
-        }),
-      });
-
-      if (response.ok) {
-        alert("User updated successfully");
-        setShowEditModal(false);
-        window.location.reload();
-      } else {
-        alert("Failed to update user");
-      }
-    } catch (error) {
-      console.error("Update error:", error);
-      alert("Error updating user");
     }
   };
 
@@ -107,6 +137,7 @@ export default function Users() {
           <thead className="bg-[#1f1f1f] text-gray-400 uppercase">
             <tr>
               <th className="px-4 py-3 text-left">#</th>
+              <th className="px-4 py-3 text-left">Avatar</th>
               <th className="px-4 py-3 text-left">Name</th>
               <th className="px-4 py-3 text-left">UID</th>
               <th className="px-4 py-3 text-left">Gold</th>
@@ -121,13 +152,20 @@ export default function Users() {
             {filteredUsers.map((user, index) => (
               <tr key={user._id} className="border-b border-gray-700 hover:bg-[#2a2a2a]">
                 <td className="px-4 py-2">{index + 1}</td>
+                <td className="px-4 py-2">
+                  {user.avatarUrl ? (
+                    <img src={user.avatarUrl} alt="Avatar" className="w-8 h-8 rounded-full object-cover" />
+                  ) : (
+                    "N/A"
+                  )}
+                </td>
                 <td className="px-4 py-2">{user.name || "N/A"}</td>
                 <td className="px-4 py-2">{user.ui_id || "N/A"}</td>
                 <td className="px-4 py-2">{user.gold || 0}</td>
                 <td className="px-4 py-2">{user.diamond || 0}</td>
                 <td className="px-4 py-2 max-w-[150px] truncate">{user.email || "N/A"}</td>
                 <td className="px-4 py-2">{user.phoneNumber || "N/A"}</td>
-                <td className="px-4 py-2 text-red-500">{user.isBlock ? "true" : "false"}</td>
+                <td className="px-4 py-2 text-red-500">{user.isBlocked ? "true" : "false"}</td>
                 <td className="px-4 py-2 flex flex-col gap-2 sm:flex-row">
                   <button
                     onClick={() => openEditModal(user)}
@@ -146,7 +184,7 @@ export default function Users() {
             ))}
             {filteredUsers.length === 0 && (
               <tr>
-                <td colSpan="9" className="text-center py-4 text-gray-400">
+                <td colSpan="10" className="text-center py-4 text-gray-400">
                   No users found.
                 </td>
               </tr>
@@ -189,6 +227,16 @@ export default function Users() {
               value={formData.diamond}
               onChange={(e) => setFormData({ ...formData, diamond: Number(e.target.value) })}
             />
+
+            <div>
+              <label className="block text-sm mb-1">Avatar</label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setAvatarFile(e.target.files[0])}
+                className="w-full text-white"
+              />
+            </div>
 
             <button
               onClick={() => setFormData({ ...formData, isBlocked: !formData.isBlocked })}

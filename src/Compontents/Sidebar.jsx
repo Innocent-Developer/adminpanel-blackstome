@@ -1,12 +1,10 @@
 import {
   Home,
   Users,
-  Wallet,
   DollarSign,
   MessageSquare,
   Star,
   Trophy,
-  Package,
   BarChart2,
   Gift,
   Mic,
@@ -25,12 +23,10 @@ import { FaArrowRightFromBracket } from "react-icons/fa6";
 
 // Sidebar menu items
 const menuItems = [
-  { label: "Wallet", icon: Wallet },
   { label: "Charge System", icon: Star },
   { label: "Admin Massege", icon: MessageCircle },
   { label: "Banner", icon: Image },
   { label: "Coin Price", icon: Trophy },
-  { label: "Sales", icon: Package },
   { label: "Level", icon: BarChart2 },
   { label: "Lucky Box", icon: Gift },
   { label: "Room", icon: Mic },
@@ -61,9 +57,13 @@ export default function Sidebar() {
     <>
       {/* Mobile Top Bar */}
       <div className="md:hidden  gap-1 text-white  items-center px-4 py-4 shadow w-full h-16 bg-[#121212] flex justify-between fixed top-0 left-0 z-50 mb-4">
-        <span className="text-xl font-semibold">King</span>
+        <span className="text-xl font-semibold">Black Stone</span>
         <button onClick={() => setIsMobileOpen(!isMobileOpen)}>
-          {isMobileOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          {isMobileOpen ? (
+            <X className="w-6 h-6" />
+          ) : (
+            <Menu className="w-6 h-6" />
+          )}
         </button>
       </div>
 
@@ -83,7 +83,7 @@ export default function Sidebar() {
       >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-[#333] flex justify-between items-center">
-          <span className="text-xl font-bold">logo</span>
+          <span className="text-xl font-bold">Black Stone </span>
           <button onClick={() => setIsMobileOpen(false)} className="md:hidden">
             <X className="w-5 h-5" />
           </button>
@@ -91,7 +91,6 @@ export default function Sidebar() {
 
         {/* Navigation Links */}
         <ul className="space-y-2 p-4">
-
           {/* Dashboard */}
           <NavLink
             to="/dashboard"
@@ -128,18 +127,31 @@ export default function Sidebar() {
                 <DollarSign className="w-5 h-5" />
                 <span>Withdraws</span>
               </div>
-              {withdrawOpen ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+              {withdrawOpen ? (
+                <ChevronUp className="w-4 h-4" />
+              ) : (
+                <ChevronDown className="w-4 h-4" />
+              )}
             </button>
 
             {withdrawOpen && (
               <ul className="ml-6 mt-1 space-y-1 text-sm">
-                <NavLink to="/withdraws/requests" className="block px-2 py-1 rounded hover:bg-[#333]">
+                <NavLink
+                  to="/withdraws/requests"
+                  className="block px-2 py-1 rounded hover:bg-[#333]"
+                >
                   Requests
                 </NavLink>
-                <NavLink to="/Approve-withdraw" className="block px-2 py-1 rounded hover:bg-[#333]">
+                <NavLink
+                  to="/Approve-withdraw"
+                  className="block px-2 py-1 rounded hover:bg-[#333]"
+                >
                   Approve Withdraw
                 </NavLink>
-                <NavLink to="/withdraws/history" className="block px-2 py-1 rounded hover:bg-[#333]">
+                <NavLink
+                  to="/withdraws/history"
+                  className="block px-2 py-1 rounded hover:bg-[#333]"
+                >
                   History
                 </NavLink>
               </ul>

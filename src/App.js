@@ -15,6 +15,7 @@ import AllBanners from "./Files/AllBaners.jsx";
 import ProtectedLayout from "./Compontents/ProtectedLayout.jsx"; // Adjust path if needed
 import SetCoinPrice from "./Files/CoinPrice.jsx";
 import AdminMessage from "./Files/OfficalMassege.jsx";
+import AllPosts from "./Files/AllPosts.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -101,6 +102,14 @@ function App() {
           element={
             <ProtectedLayout isAuthenticated={isAuthenticated}>
               <AdminMessage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/posts"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <AllPosts />
             </ProtectedLayout>
           }
         />
