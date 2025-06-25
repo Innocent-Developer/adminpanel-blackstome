@@ -27,7 +27,8 @@ const menuItems = [
   { label: "Admin Massege", icon: MessageCircle },
   { label: "Banner", icon: Image },
   { label: "Coin Price", icon: Trophy },
-  { label: "Level", icon: BarChart2 },
+  // { label: "Merchants", icon: UserCheck },
+  { label: "Merchants", icon: BarChart2 },
   { label: "Lucky Box", icon: Gift },
   { label: "Room", icon: Mic },
   { label: "Agency System", icon: UserCheck },
@@ -50,7 +51,9 @@ export default function Sidebar() {
   const handleLogout = () => {
     localStorage.removeItem("isLoggedIn");
     localStorage.removeItem("user");
-    navigate("/");
+    localStorage.removeItem("token"); // ✅ clear the token
+    navigate("/"); // Redirect to login
+    window.location.reload(); // ✅ force auth state reset if not using context
   };
 
   return (

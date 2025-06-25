@@ -18,11 +18,7 @@ const Login = ({ setIsAuthenticated }) => {
       const res = await axios.post(
         "https://www.blackstonevoicechatroom.online/login",
         { email, password },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
+        { headers: { "Content-Type": "application/json" } }
       );
 
       const { token, user } = res.data;
@@ -30,9 +26,10 @@ const Login = ({ setIsAuthenticated }) => {
       if (user.role === "admin") {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
+        localStorage.setItem("isLoggedIn", "true"); // ✅ Add this
 
-        setIsAuthenticated(true); // ✅ Updates auth state in App
-        navigate("/dashboard");   // ✅ Redirect to dashboard
+        setIsAuthenticated(true); // Optional: update global auth state
+        navigate("/dashboard");
       } else {
         setError("Access denied. Only admin can log in.");
       }
@@ -48,7 +45,11 @@ const Login = ({ setIsAuthenticated }) => {
     <div className="min-h-screen bg-[#1e1e1e] flex items-center justify-center px-4">
       <div className="bg-[#2a2a2a] text-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
-          <img src="https://res.cloudinary.com/dha65z0gy/image/upload/v1750568548/banners/g8682gvbhfutdriyrysw.jpg" alt="Logo" className="w-20 h-20 mb-2" />
+          <img
+            src="https://res.cloudinary.com/dha65z0gy/image/upload/v1750568548/banners/g8682gvbhfutdriyrysw.jpg"
+            alt="Logo"
+            className="w-20 h-20 mb-2"
+          />
           <h2 className="text-xl font-semibold text-yellow-400">Sign In</h2>
           <p className="text-sm text-gray-400">
             Enter your email and password to sign in

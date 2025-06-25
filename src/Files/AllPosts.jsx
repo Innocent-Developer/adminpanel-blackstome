@@ -3,15 +3,18 @@ import axios from 'axios';
 
 const AllPosts = () => {
   const [posts, setPosts] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [postsPerPage] = useState(5);
+  const [loading, setLoading] = useState(false);
 
   const fetchPosts = async () => {
     try {
+      setLoading(true);
       const res = await axios.get('https://www.blackstonevoicechatroom.online/client/post/get');
-      setPosts(res.data.posts || []);
+      setPosts(res.data.posts);
     } catch (err) {
-      setError('Failed to fetch posts');
+      console.error('Error fetching posts:', err);
     } finally {
       setLoading(false);
     }
@@ -21,68 +24,99 @@ const AllPosts = () => {
     fetchPosts();
   }, []);
 
-  return (
-    <div className="min-h-screen bg-[#121212] text-white p-4 md:p-6">
-      <div className="max-w-7xl mx-auto">
-        <h1 className="text-2xl font-bold mb-6 text-yellow-500">All User Posts</h1>
+  const deletePost = async (postId) => {
+    try {
+      await axios.delete('https://www.blackstonevoicechatroom.online/post/delete', {
+        data: { postId },
+      });
+      setPosts(posts.filter((post) => post.post_id !== postId));
+      alert("Post Successfull Delete ")
 
-        {loading ? (
-          <p className="text-center text-gray-400">Loading posts...</p>
-        ) : error ? (
-          <p className="text-red-500 text-center">{error}</p>
-        ) : posts.length === 0 ? (
-          <p className="text-center text-gray-500">No posts found.</p>
-        ) : (
-          <div className="overflow-x-auto bg-[#1e1e1e] rounded-xl shadow-lg border border-gray-700">
-            <table className="min-w-full text-sm text-left table-auto">
-              <thead className="bg-yellow-500 text-black uppercase">
+    } catch (err) {
+      console.error('Error deleting post:', err);
+    }
+  };
+
+  const filteredPosts = posts.filter((post) =>
+    post.title.toLowerCase().includes(searchTerm.toLowerCase())||
+    post.post_id.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
+  const indexOfLastPost = currentPage * postsPerPage;
+  const indexOfFirstPost = indexOfLastPost - postsPerPage;
+  const currentPosts = filteredPosts.slice(indexOfFirstPost, indexOfLastPost);
+  const totalPages = Math.ceil(filteredPosts.length / postsPerPage);
+
+  return (
+    <div className="min-h-screen bg-[#121212] text-white p-4">
+      <div className="max-w-7xl mx-auto">
+        <h1 className="text-2xl font-bold mb-4">All Posts</h1>
+
+        <input
+          type="text"
+          placeholder="Search by title..."
+          className="mb-4 w-full md:w-1/3 p-2 rounded-md bg-[#1e1e1e] border border-gray-700 focus:outline-none"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+
+        <div className="overflow-x-auto">
+          <table className="w-full table-auto text-left border border-gray-700">
+            <thead className="bg-[#1e1e1e]">
+              <tr>
+                <th className="p-2 border border-gray-700">Title</th>
+                <th className="p-2 border border-gray-700">Content</th>
+                <th className="p-2 border border-gray-700">UI ID</th>
+                <th className="p-2 border border-gray-700">Post ID</th>
+                <th className="p-2 border border-gray-700">Created At</th>
+                <th className="p-2 border border-gray-700">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {loading ? (
                 <tr>
-                  <th className="px-4 py-3">#</th>
-                  <th className="px-4 py-3">Title</th>
-                  <th className="px-4 py-3">Content</th>
-                  <th className="px-4 py-3">Image</th>
-                  <th className="px-4 py-3">Likes</th>
-                  <th className="px-4 py-3">Tags</th>
-                  <th className="px-4 py-3">Comments</th>
-                  <th className="px-4 py-3">Date</th>
+                  <td colSpan="6" className="text-center p-4">
+                    Loading...
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {posts.map((post, index) => (
-                  <tr
-                    key={post._id}
-                    className="border-b border-gray-700 hover:bg-[#2a2a2a] transition"
-                  >
-                    <td className="px-4 py-3">{index + 1}</td>
-                    <td className="px-4 py-3 break-words max-w-xs">{post.title}</td>
-                    <td className="px-4 py-3 break-words max-w-xs">{post.content}</td>
-                    <td className="px-4 py-3">
-                      {post.images && post.images.length > 0 ? (
-                        <img
-                          src={post.images[0]}
-                          alt="Post"
-                          className="w-16 h-16 object-cover rounded"
-                        />
-                      ) : (
-                        <span className="text-gray-500">No Image</span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">{post.likes}</td>
-                    <td className="px-4 py-3 break-words max-w-sm">
-                      {post.tags && post.tags.length > 0
-                        ? post.tags.join(', ')
-                        : '—'}
-                    </td>
-                    <td className="px-4 py-3">{post.comments?.length || 0}</td>
-                    <td className="px-4 py-3">
-                      {new Date(post.createdAt).toLocaleDateString()}
+              ) : (
+                currentPosts.map((post) => (
+                  <tr key={post._id} className="border-t border-gray-800">
+                    <td className="p-2">{post.title}</td>
+                    <td className="p-2">{post.content}</td>
+                    <td className="p-2">{post.ui_id}</td>
+                    <td className="p-2">{post.post_id || 'N/A'}</td>
+                    <td className="p-2">{new Date(post.createdAt).toLocaleString()}</td>
+                    <td className="p-2 flex gap-2">
+                      {/* Add edit modal logic here */}
+                      <button
+                        className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded-md"
+                        onClick={() => deletePost(post.post_id )}
+                      >
+                        Delete
+                      </button>
                     </td>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Pagination */}
+        <div className="flex justify-center items-center mt-6 gap-2">
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map((num) => (
+            <button
+              key={num}
+              onClick={() => setCurrentPage(num)}
+              className={`px-3 py-1 rounded-md border border-gray-600 ${
+                currentPage === num ? 'bg-yellow-500 text-black' : 'bg-[#1e1e1e] text-white'
+              }`}
+            >
+              {num}
+            </button>
+          ))}
+        </div>
       </div>
     </div>
   );
