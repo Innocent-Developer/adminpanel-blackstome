@@ -29,6 +29,7 @@ const menuItems = [
   { label: "Coin Price", icon: Trophy },
   // { label: "Merchants", icon: UserCheck },
   { label: "Merchants", icon: BarChart2 },
+  { label: "MerchantsCoins", icon: BarChart2 },
   { label: "Lucky Box", icon: Gift },
   { label: "Room", icon: Mic },
   { label: "Agency System", icon: UserCheck },

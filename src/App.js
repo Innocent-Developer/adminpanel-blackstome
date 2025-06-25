@@ -12,20 +12,26 @@ import WithdrawsRequest from "./Files/Withdraws/Request.jsx";
 import WithdrawApproval from "./Files/Withdraws/ApproveWithdraws.jsx";
 import AllFeedback from "./Files/FeedBack.jsx";
 import AllBanners from "./Files/AllBaners.jsx";
-import ProtectedLayout from "./Compontents/ProtectedLayout.jsx"; // Adjust path if needed
+import ProtectedLayout from "./Compontents/ProtectedLayout.jsx";
 import SetCoinPrice from "./Files/CoinPrice.jsx";
 import AdminMessage from "./Files/OfficalMassege.jsx";
 import AllPosts from "./Files/AllPosts.jsx";
 import AgencyRequest from "./Files/agencyRequest.jsx";
 import AllMerchants from "./Files/Merchants.jsx";
+import CoinRequests from "./Files/MerchantBuyCoin.jsx";
 
 function App() {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(null); // null to delay rendering
 
   useEffect(() => {
     const token = localStorage.getItem("token");
     setIsAuthenticated(!!token);
   }, []);
+
+  // Show loading until auth is checked
+  if (isAuthenticated === null) {
+    return <div className="text-white p-4">Checking authentication...</div>;
+  }
 
   return (
     <Router>
@@ -42,7 +48,7 @@ function App() {
           }
         />
 
-        {/* Authenticated Routes wrapped with Sidebar */}
+        {/* Protected Routes */}
         <Route
           path="/dashboard"
           element={
@@ -131,8 +137,16 @@ function App() {
             </ProtectedLayout>
           }
         />
+        <Route
+          path="/merchantscoin"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <CoinRequests />
+            </ProtectedLayout>
+          }
+        />
 
-        {/* Redirect all other paths */}
+        {/* Redirect unmatched paths */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
     </Router>
