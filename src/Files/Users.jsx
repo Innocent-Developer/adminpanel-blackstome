@@ -38,14 +38,13 @@ export default function Users() {
     (user.phoneNumber || "").toString().includes(searchTerm)
   );
 
-  // Pagination logic
   const indexOfLastUser = currentPage * usersPerPage;
   const indexOfFirstUser = indexOfLastUser - usersPerPage;
   const currentUsers = filteredUsers.slice(indexOfFirstUser, indexOfLastUser);
   const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
 
-  const goToNextPage = () => setCurrentPage((prev) => Math.min(prev + 1, totalPages));
-  const goToPrevPage = () => setCurrentPage((prev) => Math.max(prev - 1, 1));
+  const goToNextPage = () => setCurrentPage(prev => Math.min(prev + 1, totalPages));
+  const goToPrevPage = () => setCurrentPage(prev => Math.max(prev - 1, 1));
   const goToPage = (page) => setCurrentPage(page);
 
   const openEditModal = (user) => {
@@ -65,6 +64,7 @@ export default function Users() {
   const handleUpdateUser = async () => {
     try {
       let avatarUrl = formData.avatarUrl;
+
       if (avatarFile) {
         const cloudFormData = new FormData();
         cloudFormData.append("file", avatarFile);
@@ -91,7 +91,7 @@ export default function Users() {
             gold: formData.gold,
             diamond: formData.diamond,
             isBlocked: formData.isBlocked,
-            avatarUrl: avatarUrl,
+            avatarUrl,
             ui_id: formData.ui_id,
           },
         }),
@@ -100,7 +100,7 @@ export default function Users() {
       if (response.ok) {
         alert("User updated successfully");
         setShowEditModal(false);
-        window.location.reload();
+        window.location.reload(); // Or refresh user list manually
       } else {
         alert("Failed to update user");
       }
@@ -198,42 +198,61 @@ export default function Users() {
         </table>
       </div>
 
-      {/* Pagination Controls */}
+      {/* Pagination */}
       <div className="flex justify-center items-center gap-2 mt-6 flex-wrap">
-        <button
-          onClick={goToPrevPage}
-          disabled={currentPage === 1}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
-        >
+        <button onClick={goToPrevPage} disabled={currentPage === 1} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50">
           Prev
         </button>
-
         {[...Array(totalPages)].map((_, idx) => (
-          <button
-            key={idx}
-            onClick={() => goToPage(idx + 1)}
-            className={`px-3 py-1 rounded ${
-              currentPage === idx + 1 ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"
-            }`}
-          >
+          <button key={idx} onClick={() => goToPage(idx + 1)} className={`px-3 py-1 rounded ${currentPage === idx + 1 ? "bg-blue-600" : "bg-gray-700 hover:bg-gray-600"}`}>
             {idx + 1}
           </button>
         ))}
-
-        <button
-          onClick={goToNextPage}
-          disabled={currentPage === totalPages}
-          className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50"
-        >
+        <button onClick={goToNextPage} disabled={currentPage === totalPages} className="px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded disabled:opacity-50">
           Next
         </button>
       </div>
 
-      {/* Edit Modal is unchanged */}
+      {/* Edit Modal */}
       {showEditModal && (
-        /* ... keep your modal here (same as before) ... */
-        <></> // Keep your existing modal implementation here
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
+          <div className="bg-[#1f1f1f] rounded-lg p-6 w-full max-w-md">
+            <h2 className="text-xl font-semibold mb-4">Edit User</h2>
+
+            <input type="text" placeholder="Name" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
+              value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+
+            <input type="text" placeholder="Phone Number" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
+              value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} />
+
+            <input type="number" placeholder="Gold" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
+              value={formData.gold} onChange={(e) => setFormData({ ...formData, gold: +e.target.value })} />
+
+            <input type="number" placeholder="Diamond" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
+              value={formData.diamond} onChange={(e) => setFormData({ ...formData, diamond: +e.target.value })} />
+
+            <div className="flex items-center mb-2">
+              <input type="checkbox" checked={formData.isBlocked} onChange={(e) => setFormData({ ...formData, isBlocked: e.target.checked })} className="mr-2" />
+              <label>Blocked</label>
+            </div>
+
+            <input type="text" placeholder="UID" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
+              value={formData.ui_id} onChange={(e) => setFormData({ ...formData, ui_id: e.target.value })} />
+
+            <input type="file" accept="image/*" className="w-full p-2 mb-4 bg-[#121212] border border-gray-600 text-white"
+              onChange={(e) => setAvatarFile(e.target.files[0])} />
+
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowEditModal(false)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
+              <button onClick={handleUpdateUser} className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Save</button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
 }
+
+
+
+
