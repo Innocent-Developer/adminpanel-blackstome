@@ -19,6 +19,7 @@ import AllPosts from "./Files/AllPosts.jsx";
 import AgencyRequest from "./Files/agencyRequest.jsx";
 import AllMerchants from "./Files/Merchants.jsx";
 import CoinRequests from "./Files/MerchantBuyCoin.jsx";
+import RoomsPage from "./Files/Rooms.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null); // null to delay rendering
@@ -142,6 +143,14 @@ function App() {
           element={
             <ProtectedLayout isAuthenticated={isAuthenticated}>
               <CoinRequests />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/room"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <RoomsPage />
             </ProtectedLayout>
           }
         />
