@@ -5,10 +5,25 @@ const RoomManager = () => {
   const [rooms, setRooms] = useState([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [showBanModal, setShowBanModal] = useState(false);
-  const [banRoomId, setBanRoomId] = useState(null);
-  const [banReason, setBanReason] = useState("");
+  const [banRoomData, setBanRoomData] = useState(null);
   const [banType, setBanType] = useState("day");
-  const [customHours, setCustomHours] = useState("");
+  const [customDuration, setCustomDuration] = useState(1);
+  const [banReason, setBanReason] = useState("");
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [selectedRoomDetails, setSelectedRoomDetails] = useState(null);
+  const [showJoinModal, setShowJoinModal] = useState(false);
+  const [joiningRoom, setJoiningRoom] = useState(null);
+
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [newRoom, setNewRoom] = useState({
+    roomName: "",
+    roomLabel: "",
+    roomKey: "",
+    roomImage: "",
+    roomThemeImage: "",
+    members: [],
+    maxUsers: 1,
+  });
 
   useEffect(() => {
     fetchRooms();
@@ -36,102 +51,194 @@ const RoomManager = () => {
     }
   };
 
-  const toggleBanStatus = async (room) => {
+  const toggleBanStatus = (room) => {
+    if (room.roomBan?.isBanned) {
+      // Directly unban if already banned
+      unbanRoom(room.roomId);
+    } else {
+      // Show ban modal if not currently banned
+      setBanRoomData(room);
+      setShowBanModal(true);
+    }
+  };
+
+  const confirmBanRoom = async () => {
     try {
-      await axios.put(
-        `https://www.blackstonevoicechatroom.online/toggle/ban/${room._id}`,
-        { isBanned: !room.roomBan.isBanned }
+      await axios.post("https://www.blackstonevoicechatroom.online/ban/room", {
+        roomId: banRoomData.roomId,
+        type: banType,
+        reason: banReason,
+        customDurationInHours:
+          banType === "custom" ? customDuration : undefined,
+      });
+      setShowBanModal(false);
+      fetchRooms();
+    } catch (err) {
+      console.error("Failed to ban room", err);
+    }
+  };
+
+  // unban room   api featch
+  const unbanRoom = async (roomId) => {
+    try {
+      await axios.post(
+        "https://www.blackstonevoicechatroom.online/unban/room",
+        {
+          roomId,
+        }
       );
       fetchRooms();
     } catch (err) {
-      console.error("Failed to toggle ban status", err);
+      console.error("Failed to unban room", err);
     }
   };
 
-  const handleBanRoom = async () => {
+  const createRoom = async () => {
     try {
-      const payload = {
-        roomId: banRoomId,
-        type: banType,
-        reason: banReason,
-      };
-      if (banType === "custom") {
-        payload.customDurationInHours = Number(customHours);
-      }
-      await axios.post("https://www.blackstonevoicechatroom.online/ban/room", payload);
-      setShowBanModal(false);
-      setBanRoomId(null);
-      setBanReason("");
-      setBanType("day");
-      setCustomHours("");
+      await axios.post(
+        "https://www.blackstonevoicechatroom.online/user/create/room",
+        newRoom
+      );
+      setShowCreateModal(false);
+      setNewRoom({
+        roomName: "",
+        roomLabel: "",
+        roomKey: "",
+        roomImage: "",
+        roomThemeImage: "",
+        members: [],
+        maxUsers: 1,
+      });
       fetchRooms();
     } catch (err) {
-      console.error("Failed to ban room", err.response?.data || err);
+      console.error("Failed to create room", err);
     }
   };
 
-  const filteredRooms = rooms.filter((room) =>
-    room.roomName.toLowerCase().includes(searchTerm.toLowerCase())||
-    room.roomId.toLowerCase().includes(searchTerm.toLowerCase())
+  // room join
+
+  const joinRoom = async (roomId, ui_id) => {
+    try {
+      const res = await axios.post(
+        "https://www.blackstonevoicechatroom.online/room/join",
+        {
+          roomId,
+          ui_id,
+        }
+      );
+      console.log(res.data.message); // "User joined room"
+      return { success: true, message: res.data.message };
+    } catch (err) {
+      console.error("Join room error:", err.response?.data || err.message);
+      return {
+        success: false,
+        message: err.response?.data?.error || "Failed to join room",
+      };
+    }
+  };
+  const handleJoinRoom = async (room) => {
+    const userString = localStorage.getItem("user");
+    let ui_id = null;
+
+    if (userString) {
+      try {
+        const user = JSON.parse(userString);
+        ui_id = user?.ui_id;
+      } catch (err) {
+        console.error("Failed to parse user from localStorage:", err);
+      }
+    }
+
+    console.log("ui_id:", ui_id);
+    console.log("Joining room with ID:", room.roomId, "for user:", ui_id);
+
+    const result = await joinRoom(room.roomId, ui_id);
+
+    if (result.success) {
+      alert("Successfully joined the room!");
+      setShowJoinModal(false);
+      // Optionally: refresh rooms or redirect
+    } else {
+      alert("Join failed: " + result.message);
+    }
+  };
+
+  const filteredRooms = rooms.filter(
+    (room) =>
+      room.roomName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      room.roomId.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   return (
-    <div className="p-4 md:p-8 text-white min-h-screen bg-[#0e0e0e]">
-      <h1 className="text-3xl font-bold mb-6">All Rooms</h1>
-      <input
-        type="text"
-        placeholder="Search by room name / roomId"
-        className="mb-4 p-2 w-full md:w-1/2 rounded-md text-black"
-        value={searchTerm}
-        onChange={(e) => setSearchTerm(e.target.value)}
-      />
-      <div className="overflow-x-auto">
-        <table className="min-w-full border border-gray-700 text-sm md:text-base">
-          <thead className="bg-[#1f1f1f]">
+    <div className="min-h-screen bg-[#0e0e0e] text-white p-4 sm:p-6 md:p-10">
+      <h1 className="text-2xl md:text-3xl font-bold mb-6 text-center md:text-left">
+        Room Manager
+      </h1>
+
+      <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
+        <input
+          type="text"
+          placeholder="Search by room name || room ID"
+          className="w-full md:w-1/2 p-2 rounded-md text-black"
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        <button
+          onClick={() => setShowCreateModal(true)}
+          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-white"
+        >
+          Create Room
+        </button>
+      </div>
+
+      <div className="overflow-auto rounded-lg shadow border border-gray-700">
+        <table className="min-w-full text-sm md:text-base text-left">
+          <thead className="bg-[#1f1f1f] text-gray-200">
             <tr>
-              <th className="p-3 border">Room Name</th>
-              <th className="p-3 border">Room ID</th>
-              <th className="p-3 border">Room Label</th>
-              <th className="p-3 border">Max Users</th>
-              <th className="p-3 border">Is Banned</th>
-              <th className="p-3 border">Actions</th>
+              <th className="px-4 py-3 border">Room Name</th>
+              <th className="px-4 py-3 border">Room ID</th>
+              <th className="px-4 py-3 border">Label</th>
+              <th className="px-4 py-3 border">Max Users</th>
+              <th className="px-4 py-3 border">Banned</th>
+              <th className="px-4 py-3 border text-center">Actions</th>
             </tr>
           </thead>
           <tbody>
             {filteredRooms.map((room) => (
-              <tr key={room._id} className="border border-gray-800">
-                <td className="p-3 border text-center">{room.roomName}</td>
-                <td className="p-3 border text-center">{room.roomId}</td>
-                <td className="p-3 border text-center">{room.roomLabel}</td>
-                <td className="p-3 border text-center">{room.maxUsers}</td>
-                <td className="p-3 border text-center">
-                  {room.roomBan.isBanned ? "Yes" : "No"}
+              <tr key={room._id} className="border-t border-gray-800">
+                <td className="px-4 py-2 text-center">{room.roomName}</td>
+                <td className="px-4 py-2 text-center">{room.roomId}</td>
+                <td className="px-4 py-2 text-center">{room.roomLabel}</td>
+                <td className="px-4 py-2 text-center">{room.maxUsers}</td>
+                <td className="px-4 py-2 text-center">
+                  {room.roomBan?.isBanned ? "Yes" : "No"}
                 </td>
-                <td className="p-3 border text-center flex flex-col gap-2 md:flex-row justify-center items-center">
-                  <button
-                    onClick={() => deleteRoom(room.roomId)}
-                    className="bg-red-600 hover:bg-red-700 px-3 py-1 rounded-md text-sm"
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={() => {
-                      if (room.roomBan.isBanned) {
-                        toggleBanStatus(room);
-                      } else {
-                        setBanRoomId(room.roomId);
-                        setShowBanModal(true);
-                      }
-                    }}
-                    className={`$ {
-                      room.roomBan.isBanned
-                        ? "bg-green-600   hover:bg-green-700"
-                        : "bg-yellow-600  hover:bg-yellow-700"
-                    } px-3 py-1 rounded-md text-sm`}
-                  >
-                    {room.roomBan.isBanned ? "Unban" : "Ban"}
-                  </button>
-                </td>
+                <td className="border p-2 flex gap-2 justify-center">
+                <button onClick={() => deleteRoom(room.roomId)} className="bg-red-600 px-3 py-1 rounded">
+                  Delete
+                </button>
+                <button onClick={() => toggleBanStatus(room)} className="bg-yellow-600 px-3 py-1 rounded">
+                  {room.roomBan?.isBanned ? "Unban" : "Ban"}
+                </button>
+                <button
+                  onClick={() => {
+                    setSelectedRoomDetails(room);
+                    setShowDetailsModal(true);
+                  }}
+                  className="bg-blue-600 px-3 py-1 rounded"
+                >
+                  View
+                </button>
+                <button
+                  onClick={() => {
+                    setJoiningRoom(room);
+                    handleJoinRoom(room);
+                  }}
+                  className="bg-purple-600 px-3 py-1 rounded"
+                >
+                  Join
+                </button>
+              </td>
               </tr>
             ))}
           </tbody>
@@ -140,24 +247,15 @@ const RoomManager = () => {
 
       {/* Ban Modal */}
       {showBanModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center z-50">
-          <div className="bg-white text-black p-6 rounded-xl w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Ban Room</h2>
+        <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-75 z-50">
+          <div className="bg-white text-black p-6 rounded-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Ban Room: {banRoomData?.roomName}</h2>
 
-            <label className="block mb-2 font-medium">Reason</label>
-            <input
-              type="text"
-              value={banReason}
-              onChange={(e) => setBanReason(e.target.value)}
-              className="w-full p-2 mb-4 border rounded"
-              placeholder="Enter reason"
-            />
-
-            <label className="block mb-2 font-medium">Ban Duration</label>
+            <label className="block mb-2">Ban Type:</label>
             <select
+              className="w-full p-2 mb-3 border rounded"
               value={banType}
               onChange={(e) => setBanType(e.target.value)}
-              className="w-full p-2 mb-4 border rounded"
             >
               <option value="day">1 Day</option>
               <option value="month">1 Month</option>
@@ -168,25 +266,163 @@ const RoomManager = () => {
             {banType === "custom" && (
               <input
                 type="number"
-                value={customHours}
-                onChange={(e) => setCustomHours(e.target.value)}
-                className="w-full p-2 mb-4 border rounded"
-                placeholder="Enter hours"
+                placeholder="Hours"
+                className="w-full p-2 mb-3 border rounded"
+                value={customDuration}
+                onChange={(e) => setCustomDuration(e.target.value)}
               />
             )}
 
-            <div className="flex justify-end gap-4">
+            <input
+              type="text"
+              placeholder="Reason"
+              className="w-full p-2 mb-4 border rounded"
+              value={banReason}
+              onChange={(e) => setBanReason(e.target.value)}
+            />
+
+            <div className="flex justify-end gap-3">
+              <button onClick={() => setShowBanModal(false)} className="bg-gray-300 px-4 py-2 rounded">
+                Cancel
+              </button>
+              <button onClick={confirmBanRoom} className="bg-red-600 text-white px-4 py-2 rounded">
+                Confirm
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Create Room Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70">
+          <div className="bg-white text-black p-6 rounded-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Create New Room</h2>
+
+            {Object.entries(newRoom).map(([field, value]) => {
+              if (field === "members") return null;
+
+              if (field === "roomLabel") {
+                return (
+                  <select
+                    key={field}
+                    className="w-full p-2 mb-3 border rounded"
+                    value={value}
+                    onChange={(e) =>
+                      setNewRoom({ ...newRoom, [field]: e.target.value })
+                    }
+                  >
+                    <option value="">Select Room Label</option>
+                    <option value="Public">Public</option>
+                    <option value="Private">Private</option>
+                  </select>
+                );
+              }
+
+              return (
+                <input
+                  key={field}
+                  type={field === "maxUsers" ? "number" : "text"}
+                  placeholder={field}
+                  className="w-full p-2 mb-3 border rounded"
+                  value={value}
+                  onChange={(e) =>
+                    setNewRoom({
+                      ...newRoom,
+                      [field]:
+                        field === "maxUsers"
+                          ? Number(e.target.value)
+                          : e.target.value,
+                    })
+                  }
+                />
+              );
+            })}
+
+            <div className="flex justify-end gap-3">
               <button
-                onClick={() => setShowBanModal(false)}
+                onClick={() => setShowCreateModal(false)}
                 className="bg-gray-300 px-4 py-2 rounded"
               >
                 Cancel
               </button>
               <button
-                onClick={handleBanRoom}
-                className="bg-red-600 text-white px-4 py-2 rounded"
+                onClick={createRoom}
+                className="bg-green-600 text-white px-4 py-2 rounded"
               >
-                Confirm Ban
+                Create
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {showDetailsModal && selectedRoomDetails && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 px-4">
+          <div className="bg-[#1e1e1e] text-white p-6 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-lg border border-gray-600">
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold">Room Details</h2>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="text-gray-400 hover:text-white text-xl"
+              >
+                &times;
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              {Object.entries(selectedRoomDetails).map(([key, value]) => (
+                <div
+                  key={key}
+                  className="bg-[#2a2a2a] p-4 rounded-lg border border-gray-700"
+                >
+                  <p className="text-gray-400 text-sm font-medium">{key}</p>
+                  <pre className="whitespace-pre-wrap break-words text-white text-sm">
+                    {Array.isArray(value)
+                      ? value.length > 0
+                        ? JSON.stringify(value, null, 2)
+                        : "[]"
+                      : typeof value === "object" && value !== null
+                      ? JSON.stringify(value, null, 2)
+                      : String(value)}
+                  </pre>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-200"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Join Room Modal */}
+      {showJoinModal && joiningRoom && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 px-4">
+          <div className="bg-white text-black p-6 rounded-lg w-full max-w-md">
+            <h2 className="text-xl font-bold mb-4">Join Room</h2>
+            <p className="mb-4">
+              Are you sure you want to join room:{" "}
+              <strong>{joiningRoom.roomName}</strong>?
+            </p>
+
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setShowJoinModal(false)}
+                className="bg-gray-300 px-4 py-2 rounded"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => handleJoinRoom(joiningRoom)}
+                className="bg-purple-600 text-white px-4 py-2 rounded"
+              >
+                Join
               </button>
             </div>
           </div>
