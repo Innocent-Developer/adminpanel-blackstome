@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
+import AdminRoomChatPopup from "../Compontents/chatPage";
 
 const RoomManager = () => {
   const [rooms, setRooms] = useState([]);
@@ -13,8 +14,9 @@ const RoomManager = () => {
   const [selectedRoomDetails, setSelectedRoomDetails] = useState(null);
   const [showJoinModal, setShowJoinModal] = useState(false);
   const [joiningRoom, setJoiningRoom] = useState(null);
-
+  const [chatRoom, setChatRoom] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
+  
   const [newRoom, setNewRoom] = useState({
     roomName: "",
     roomLabel: "",
@@ -28,6 +30,7 @@ const RoomManager = () => {
   useEffect(() => {
     fetchRooms();
   }, []);
+
 
   const fetchRooms = async () => {
     try {
@@ -158,6 +161,7 @@ const RoomManager = () => {
       alert("Successfully joined the room!");
       setShowJoinModal(false);
       // Optionally: refresh rooms or redirect
+      fetchRooms();
     } else {
       alert("Join failed: " + result.message);
     }
@@ -214,31 +218,37 @@ const RoomManager = () => {
                   {room.roomBan?.isBanned ? "Yes" : "No"}
                 </td>
                 <td className="border p-2 flex gap-2 justify-center">
-                <button onClick={() => deleteRoom(room.roomId)} className="bg-red-600 px-3 py-1 rounded">
-                  Delete
-                </button>
-                <button onClick={() => toggleBanStatus(room)} className="bg-yellow-600 px-3 py-1 rounded">
-                  {room.roomBan?.isBanned ? "Unban" : "Ban"}
-                </button>
-                <button
-                  onClick={() => {
-                    setSelectedRoomDetails(room);
-                    setShowDetailsModal(true);
-                  }}
-                  className="bg-blue-600 px-3 py-1 rounded"
-                >
-                  View
-                </button>
-                <button
-                  onClick={() => {
-                    setJoiningRoom(room);
-                    handleJoinRoom(room);
-                  }}
-                  className="bg-purple-600 px-3 py-1 rounded"
-                >
-                  Join
-                </button>
-              </td>
+                  <button
+                    onClick={() => deleteRoom(room.roomId)}
+                    className="bg-red-600 px-3 py-1 rounded"
+                  >
+                    Delete
+                  </button>
+                  <button
+                    onClick={() => toggleBanStatus(room)}
+                    className="bg-yellow-600 px-3 py-1 rounded"
+                  >
+                    {room.roomBan?.isBanned ? "Unban" : "Ban"}
+                  </button>
+                  <button
+                    onClick={() => {
+                      setSelectedRoomDetails(room);
+                      setShowDetailsModal(true);
+                    }}
+                    className="bg-blue-600 px-3 py-1 rounded"
+                  >
+                    View
+                  </button>
+                  <button
+                    onClick={() => {
+                      setJoiningRoom(room);
+                      handleJoinRoom(room);
+                    }}
+                    className="bg-purple-600 px-3 py-1 rounded"
+                  >
+                    Join
+                  </button>
+                </td>
               </tr>
             ))}
           </tbody>
@@ -249,7 +259,9 @@ const RoomManager = () => {
       {showBanModal && (
         <div className="fixed inset-0 flex justify-center items-center bg-black bg-opacity-75 z-50">
           <div className="bg-white text-black p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-bold mb-4">Ban Room: {banRoomData?.roomName}</h2>
+            <h2 className="text-xl font-bold mb-4">
+              Ban Room: {banRoomData?.roomName}
+            </h2>
 
             <label className="block mb-2">Ban Type:</label>
             <select
@@ -282,10 +294,16 @@ const RoomManager = () => {
             />
 
             <div className="flex justify-end gap-3">
-              <button onClick={() => setShowBanModal(false)} className="bg-gray-300 px-4 py-2 rounded">
+              <button
+                onClick={() => setShowBanModal(false)}
+                className="bg-gray-300 px-4 py-2 rounded"
+              >
                 Cancel
               </button>
-              <button onClick={confirmBanRoom} className="bg-red-600 text-white px-4 py-2 rounded">
+              <button
+                onClick={confirmBanRoom}
+                className="bg-red-600 text-white px-4 py-2 rounded"
+              >
                 Confirm
               </button>
             </div>
@@ -356,6 +374,7 @@ const RoomManager = () => {
           </div>
         </div>
       )}
+      {/* room deaitls */}
       {showDetailsModal && selectedRoomDetails && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-70 px-4">
           <div className="bg-[#1e1e1e] text-white p-6 rounded-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto shadow-lg border border-gray-600">
@@ -389,7 +408,16 @@ const RoomManager = () => {
               ))}
             </div>
 
-            <div className="mt-6 flex justify-end">
+            <div className="mt-6 flex justify-between">
+              <button
+                onClick={() => {
+                  setChatRoom(selectedRoomDetails); // ✅ FIXED HERE
+                  setShowDetailsModal(false); // Optional: close modal when opening chat
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-200"
+              >
+                Chat Now
+              </button>
               <button
                 onClick={() => setShowDetailsModal(false)}
                 className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-200"
@@ -425,6 +453,21 @@ const RoomManager = () => {
                 Join
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* chat room page   */}
+      {chatRoom && (
+        <div className="fixed inset-0 z-50 bg-black bg-opacity-70 flex justify-center items-center">
+          <div className="bg-white text-black p-4 rounded-lg w-full max-w-2xl relative">
+            <button
+              className="absolute top-2 right-2 text-xl text-gray-700"
+              onClick={() => setChatRoom(null)}
+            >
+              &times;
+            </button>
+            <AdminRoomChatPopup roomId={chatRoom.roomId} ui_id={chatRoom.ui_id} />
           </div>
         </div>
       )}
