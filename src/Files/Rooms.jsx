@@ -16,7 +16,7 @@ const RoomManager = () => {
   const [joiningRoom, setJoiningRoom] = useState(null);
   const [chatRoom, setChatRoom] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-  
+
   const [newRoom, setNewRoom] = useState({
     roomName: "",
     roomLabel: "",
@@ -30,7 +30,6 @@ const RoomManager = () => {
   useEffect(() => {
     fetchRooms();
   }, []);
-
 
   const fetchRooms = async () => {
     try {
@@ -120,14 +119,14 @@ const RoomManager = () => {
 
   // room join
 
-  const joinRoom = async (roomId, ui_id , roomKey) => {
+  const joinRoom = async (roomId, ui_id, roomKey) => {
     try {
       const res = await axios.post(
         "https://www.blackstonevoicechatroom.online/room/join",
         {
           roomId,
           ui_id,
-          roomKey
+          roomKey,
         }
       );
       console.log(res.data.message); // "User joined room"
@@ -156,12 +155,13 @@ const RoomManager = () => {
     console.log("ui_id:", ui_id);
     console.log("Joining room with ID:", room.roomId, "for user:", ui_id);
 
-    const result = await joinRoom(room.roomId, ui_id ,room.roomKey);
+    const result = await joinRoom(room.roomId, ui_id, room.roomKey);
 
     if (result.success) {
       alert("Successfully joined the room!");
       setShowJoinModal(false);
       // Optionally: refresh rooms or redirect
+      setChatRoom(room); // 👈 Show chat popup
       fetchRooms();
     } else {
       alert("Join failed: " + result.message);
@@ -468,7 +468,11 @@ const RoomManager = () => {
             >
               &times;
             </button>
-            <AdminRoomChatPopup roomId={chatRoom.roomId} ui_id={chatRoom.ui_id} />
+            <AdminRoomChatPopup
+              room={chatRoom}
+              ui_id={chatRoom.ui_id}
+              onClose={() => setChatRoom(null)}
+            />
           </div>
         </div>
       )}
