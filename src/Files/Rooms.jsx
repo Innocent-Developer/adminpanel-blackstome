@@ -120,13 +120,14 @@ const RoomManager = () => {
 
   // room join
 
-  const joinRoom = async (roomId, ui_id) => {
+  const joinRoom = async (roomId, ui_id , roomKey) => {
     try {
       const res = await axios.post(
         "https://www.blackstonevoicechatroom.online/room/join",
         {
           roomId,
           ui_id,
+          roomKey
         }
       );
       console.log(res.data.message); // "User joined room"
@@ -155,7 +156,7 @@ const RoomManager = () => {
     console.log("ui_id:", ui_id);
     console.log("Joining room with ID:", room.roomId, "for user:", ui_id);
 
-    const result = await joinRoom(room.roomId, ui_id);
+    const result = await joinRoom(room.roomId, ui_id ,room.roomKey);
 
     if (result.success) {
       alert("Successfully joined the room!");

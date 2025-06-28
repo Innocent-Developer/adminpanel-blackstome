@@ -38,7 +38,7 @@ const ui_id = user?.ui_id; // This will be a number
 
   useEffect(() => {
     fetchMessages();
-    const interval = setInterval(fetchMessages, 5000);
+    const interval = setInterval(fetchMessages, 2000);
     return () => clearInterval(interval);
   }, [roomId]);
 
