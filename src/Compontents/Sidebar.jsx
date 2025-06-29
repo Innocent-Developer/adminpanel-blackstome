@@ -3,7 +3,6 @@ import {
   Users,
   DollarSign,
   MessageSquare,
-  Star,
   Trophy,
   BarChart2,
   Gift,
@@ -23,7 +22,7 @@ import { FaArrowRightFromBracket } from "react-icons/fa6";
 
 // Sidebar menu items
 const menuItems = [
-  { label: "Charge System", icon: Star },
+
   { label: "Admin Massege", icon: MessageCircle },
   { label: "Banner", icon: Image },
   { label: "Coin Price", icon: Trophy },
