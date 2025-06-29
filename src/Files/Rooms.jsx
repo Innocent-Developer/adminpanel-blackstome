@@ -16,7 +16,8 @@ const RoomManager = () => {
   const [joiningRoom, setJoiningRoom] = useState(null);
   const [chatRoom, setChatRoom] = useState(null);
   const [showCreateModal, setShowCreateModal] = useState(false);
-
+  const user = JSON.parse(localStorage.getItem("user"));
+  const adminUiId = user?.ui_id?.toString()?.trim();
   const [newRoom, setNewRoom] = useState({
     roomName: "",
     roomLabel: "",
@@ -24,7 +25,7 @@ const RoomManager = () => {
     roomImage: "",
     roomThemeImage: "",
     members: [],
-    maxUsers: 1,
+    ui_id: adminUiId,
   });
 
   useEffect(() => {
@@ -36,7 +37,12 @@ const RoomManager = () => {
       const res = await axios.get(
         "https://www.blackstonevoicechatroom.online/user/get/rooms"
       );
-      setRooms(res.data);
+      const safeRooms = res.data.map((room) => ({
+        ...room,
+        roomName: room.roomName || "",
+        roomId: room.roomId || "",
+      }));
+      setRooms(safeRooms);
     } catch (err) {
       console.error("Failed to fetch rooms", err);
     }
@@ -341,7 +347,7 @@ const RoomManager = () => {
               return (
                 <input
                   key={field}
-                  type={field === "maxUsers" ? "number" : "text"}
+                  type={field === "ui_id" ? "text" : "text"}
                   placeholder={field}
                   className="w-full p-2 mb-3 border rounded"
                   value={value}
@@ -349,7 +355,7 @@ const RoomManager = () => {
                     setNewRoom({
                       ...newRoom,
                       [field]:
-                        field === "maxUsers"
+                        field === "ui_id"
                           ? Number(e.target.value)
                           : e.target.value,
                     })
