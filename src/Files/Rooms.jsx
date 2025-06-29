@@ -388,6 +388,23 @@ const RoomManager = () => {
                 &times;
               </button>
             </div>
+            <div className="mt-6 flex justify-between mb-2">
+              <button
+                onClick={() => {
+                  setChatRoom(selectedRoomDetails); // ✅ FIXED HERE
+                  setShowDetailsModal(false); // Optional: close modal when opening chat
+                }}
+                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-200"
+              >
+                Chat Now
+              </button>
+              <button
+                onClick={() => setShowDetailsModal(false)}
+                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-200"
+              >
+                Close
+              </button>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {Object.entries(selectedRoomDetails).map(([key, value]) => (
@@ -407,24 +424,6 @@ const RoomManager = () => {
                   </pre>
                 </div>
               ))}
-            </div>
-
-            <div className="mt-6 flex justify-between">
-              <button
-                onClick={() => {
-                  setChatRoom(selectedRoomDetails); // ✅ FIXED HERE
-                  setShowDetailsModal(false); // Optional: close modal when opening chat
-                }}
-                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-200"
-              >
-                Chat Now
-              </button>
-              <button
-                onClick={() => setShowDetailsModal(false)}
-                className="bg-red-600 hover:bg-red-700 text-white px-5 py-2 rounded-lg transition duration-200"
-              >
-                Close
-              </button>
             </div>
           </div>
         </div>
