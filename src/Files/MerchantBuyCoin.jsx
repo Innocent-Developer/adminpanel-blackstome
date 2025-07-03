@@ -35,7 +35,7 @@ const CoinRequests = () => {
   }, []);
 
   return (
-    <div className="p-6 text-white bg-black min-h-screen">
+    <div className="p-6 text-white bg-[#121212] min-h-screen">
       <h2 className="text-2xl font-bold mb-4 text-orange-500">Merchant Coin Requests</h2>
 
       {loading ? (

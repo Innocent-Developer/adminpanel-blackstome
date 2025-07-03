@@ -20,6 +20,7 @@ import AgencyRequest from "./Files/agencyRequest.jsx";
 import AllMerchants from "./Files/Merchants.jsx";
 import CoinRequests from "./Files/MerchantBuyCoin.jsx";
 import RoomsPage from "./Files/Rooms.jsx";
+import ShopAdminPage from "./Files/ShopPage.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null); // null to delay rendering
@@ -139,7 +140,15 @@ function App() {
           }
         />
         <Route
-          path="/merchantscoin"
+          path="/room"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <RoomsPage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/merchantscoins"
           element={
             <ProtectedLayout isAuthenticated={isAuthenticated}>
               <CoinRequests />
@@ -147,10 +156,10 @@ function App() {
           }
         />
         <Route
-          path="/room"
+          path="/shop"
           element={
             <ProtectedLayout isAuthenticated={isAuthenticated}>
-              <RoomsPage />
+              <ShopAdminPage />
             </ProtectedLayout>
           }
         />

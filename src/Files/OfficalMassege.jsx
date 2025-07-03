@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import { Trash2 } from 'lucide-react';
 
 const OfficialMessage = () => {
   const [title, setTitle] = useState('');
@@ -10,6 +11,9 @@ const OfficialMessage = () => {
   const [error, setError] = useState('');
   const [messages, setMessages] = useState([]);
   const [showModal, setShowModal] = useState(false);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const messagesPerPage = 10;
 
   const user = JSON.parse(localStorage.getItem('user'));
 
@@ -95,7 +99,7 @@ const OfficialMessage = () => {
 
   return (
     <div className="min-h-screen bg-[#121212] text-white p-4 md:p-6 mt-16">
-      <div className="max-w-4xl mx-auto w-full">
+      <div className="max-w-6xl mx-auto w-full">
         <button
           onClick={() => setShowModal(true)}
           className="mb-6 bg-yellow-500 hover:bg-yellow-600 text-black font-bold py-2 px-6 rounded-lg transition w-full sm:w-auto"
@@ -103,29 +107,69 @@ const OfficialMessage = () => {
           Send Message
         </button>
 
-        {/* Messages List */}
-        <div className="grid gap-4">
-          {messages.map((msg) => (
-            <div key={msg._id} className="bg-[#1e1e1e] p-4 rounded-xl shadow-lg border border-gray-700">
-              <div className="flex justify-between items-start flex-wrap gap-2">
-                <h3 className="font-semibold text-lg break-words">{msg.title || 'No Title'}</h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
+          {messages
+            .slice((currentPage - 1) * messagesPerPage, currentPage * messagesPerPage)
+            .map((msg) => (
+              <div
+                key={msg._id}
+                className="relative group bg-[#1e1e1e] border border-yellow-500 rounded-lg overflow-hidden shadow-md hover:shadow-xl transition duration-300"
+              >
+                {msg.image && (
+                  <img
+                    src={msg.image}
+                    alt="Message"
+                    className="w-full h-32 object-cover"
+                  />
+                )}
+                <div className="p-4 flex flex-col justify-between h-full">
+                  <h3 className="font-bold text-lg text-yellow-400 mb-2 line-clamp-1">
+                    {msg.title || 'No Title'}
+                  </h3>
+                  <p className="text-sm text-gray-300 mb-4 line-clamp-2">
+                    {msg.content}
+                  </p>
+                  <span className="text-xs text-gray-500">
+                    {new Date(msg.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
                 <button
                   onClick={() => handleDelete(msg._id)}
-                  className="text-red-500 text-sm hover:underline"
+                  className="absolute top-2 right-2 bg-red-600 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition duration-300"
                 >
-                  Delete
+                  <Trash2 size={16} />
                 </button>
               </div>
-              <p className="text-sm mt-2 break-words">{msg.content}</p>
-              {msg.image && (
-                <img src={msg.image} alt="msg" className="w-full max-w-xs mt-2 rounded-lg object-cover" />
-              )}
-            </div>
-          ))}
+            ))}
+        </div>
+
+        <div className="flex justify-center items-center gap-4">
+          <button
+            onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+            className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50"
+            disabled={currentPage === 1}
+          >
+            Previous
+          </button>
+
+          <span className="text-yellow-400 font-semibold">
+            Page {currentPage} of {Math.ceil(messages.length / messagesPerPage)}
+          </span>
+
+          <button
+            onClick={() =>
+              setCurrentPage((prev) =>
+                prev < Math.ceil(messages.length / messagesPerPage) ? prev + 1 : prev
+              )
+            }
+            className="px-4 py-2 bg-gray-700 rounded hover:bg-gray-600 disabled:opacity-50"
+            disabled={currentPage === Math.ceil(messages.length / messagesPerPage)}
+          >
+            Next
+          </button>
         </div>
       </div>
 
-      {/* Modal Popup */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
           <div className="bg-[#1e1e1e] w-full max-w-md mx-auto p-6 rounded-xl shadow-xl border border-dashed border-yellow-500 text-white relative max-h-[90vh] overflow-y-auto">
