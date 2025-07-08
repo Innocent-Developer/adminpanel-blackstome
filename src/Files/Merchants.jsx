@@ -8,9 +8,9 @@ const AllMerchants = () => {
   const [currentPage, setCurrentPage] = useState(1);
   const merchantsPerPage = 10;
 
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [showDetailModal, setShowDetailModal] = useState(false);
-  const [selectedMerchant, setSelectedMerchant] = useState(null);
+  const [showCoinModal, setShowCoinModal] = useState(false);
+  const [coinAmount, setCoinAmount] = useState("");
+  const [coinTargetId, setCoinTargetId] = useState("");
 
   const [formData, setFormData] = useState({
     merchantName: "",
@@ -20,6 +20,8 @@ const AllMerchants = () => {
     merchantLogoUrl: "",
   });
 
+  const [showAddModal, setShowAddModal] = useState(false);
+
   useEffect(() => {
     fetchMerchants();
   }, []);
@@ -27,11 +29,11 @@ const AllMerchants = () => {
   const fetchMerchants = async () => {
     try {
       const res = await axios.get("https://www.blackstonevoicechatroom.online/get/all/a/vvpi/merchants");
-      const merchantList = res.data?.merchants || [];
-      setMerchants(merchantList);
-      setFilteredMerchants(merchantList);
-    } catch (error) {
-      console.error("Error fetching merchants:", error);
+      const list = res.data?.merchants || [];
+      setMerchants(list);
+      setFilteredMerchants(list);
+    } catch (err) {
+      alert("Failed to fetch merchants");
     }
   };
 
@@ -41,160 +43,139 @@ const AllMerchants = () => {
   };
 
   const searchMerchantById = async () => {
-    if (!searchId.trim()) {
-      setFilteredMerchants(merchants);
-      return;
-    }
+    if (!searchId.trim()) return;
     try {
-      const res = await axios.get(`https://www.blackstonevoicechatroom.online/get/merchant/user/o/bsvcr/user/find/${searchId}`);
+      const res = await axios.get(
+        `https://www.blackstonevoicechatroom.online/get/merchant/user/o/bsvcr/user/find/${searchId}`
+      );
       setFilteredMerchants([res.data]);
-      setCurrentPage(1);
-    } catch (error) {
-      console.error("Merchant not found.");
+    } catch (err) {
+      alert("Merchant not found");
       setFilteredMerchants([]);
     }
-  };
-
-  const handleInputChange = (e) => {
-    setFormData((prev) => ({ ...prev, [e.target.name]: e.target.value }));
   };
 
   const handleCreateMerchant = async () => {
     try {
       await axios.post("https://www.blackstonevoicechatroom.online/apply-merchant", formData);
-      alert("Merchant created successfully!");
-      setFormData({
-        merchantName: "",
-        merchantAddress: "",
-        merchantPhoneNumber: "",
-        merchantEmail: "",
-        merchantLogoUrl: "",
-      });
+      alert("Merchant created");
       setShowAddModal(false);
       fetchMerchants();
-    } catch (error) {
-      alert(error.response?.data?.message || "Error creating merchant");
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to create merchant");
     }
   };
 
-  const handleApproveMerchant = async (ui_id) => {
+  const handleApprove = async (ui_id) => {
     try {
       await axios.post("https://www.blackstonevoicechatroom.online/admin/approve/merchant", {
         merchantId: ui_id,
       });
-      alert("Merchant approved!");
+      alert("Merchant approved");
       fetchMerchants();
-    } catch (error) {
-      alert(error.response?.data?.message || "Approval failed");
+    } catch (err) {
+      alert(err.response?.data?.message || "Approval failed");
+    }
+  };
+
+  const handleAddCoins = async () => {
+    try {
+      await axios.post("https://www.blackstonevoicechatroom.online/admin/merchant/coin/add/fast", {
+        ui_id: coinTargetId,
+        amount: Number(coinAmount),
+      });
+      alert("Coins added");
+      setShowCoinModal(false);
+      fetchMerchants();
+    } catch (err) {
+      alert(err.response?.data?.message || "Failed to add coins");
     }
   };
 
   const handleExportCSV = () => {
-    const headers = ["UI_ID", "Name", "Email", "Phone", "Address", "Status"];
+    const headers = ["Name", "UI_ID", "Email", "Coins", "Status"];
     const rows = filteredMerchants.map((m) =>
-      [m.ui_id, m.merchantName, m.merchantEmail, m.merchantPhoneNumber, m.merchantAddress, m.status].join(",")
+      [m.merchantName, m.ui_id, m.merchantEmail, m.coins || 0, m.status].join(",")
     );
-    const csv = [headers.join(","), ...rows].join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = window.URL.createObjectURL(blob);
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
     const link = document.createElement("a");
-    link.href = url;
+    link.href = URL.createObjectURL(blob);
     link.download = "merchants.csv";
     link.click();
   };
 
-  const openDetailModal = (merchant) => {
-    setSelectedMerchant(merchant);
-    setShowDetailModal(true);
+  const openCoinModal = (ui_id) => {
+    setCoinTargetId(ui_id);
+    setCoinAmount("");
+    setShowCoinModal(true);
   };
 
+  // Pagination
   const indexOfLast = currentPage * merchantsPerPage;
   const indexOfFirst = indexOfLast - merchantsPerPage;
-  const currentMerchants = Array.isArray(filteredMerchants)
-    ? filteredMerchants.slice(indexOfFirst, indexOfLast)
-    : [];
-
+  const currentMerchants = filteredMerchants.slice(indexOfFirst, indexOfLast);
   const totalPages = Math.ceil(filteredMerchants.length / merchantsPerPage);
 
   return (
-    <div className="p-6 text-white bg-[#121212] min-h-screen">
+    <div className="p-6 bg-[#111] text-white min-h-screen">
       <h1 className="text-2xl font-bold mb-4 text-orange-400">All Merchants</h1>
 
-      {/* Search */}
-      <div className="flex flex-wrap gap-2 mb-6">
+      <div className="flex flex-wrap gap-3 mb-4">
         <input
-          type="text"
           value={searchId}
           onChange={handleSearchChange}
+          className="bg-gray-800 px-3 py-2 rounded"
           placeholder="Search by UI_ID"
-          className="px-4 py-2 bg-gray-800 text-white rounded w-60"
         />
-        <button
-          onClick={searchMerchantById}
-          className="bg-orange-400 hover:bg-orange-600 px-4 py-2 rounded text-sm"
-        >
+        <button onClick={searchMerchantById} className="bg-orange-500 px-4 py-2 rounded">
           Search
         </button>
-        <button
-          onClick={() => setShowAddModal(true)}
-          className="bg-green-500 hover:bg-green-600 px-4 py-2 rounded text-sm"
-        >
+        <button onClick={() => setShowAddModal(true)} className="bg-green-500 px-4 py-2 rounded">
           + Add Merchant
         </button>
-        <button
-          onClick={handleExportCSV}
-          className="bg-blue-500 hover:bg-blue-600 px-4 py-2 rounded text-sm"
-        >
+        <button onClick={handleExportCSV} className="bg-blue-600 px-4 py-2 rounded">
           Export CSV
         </button>
       </div>
 
-      {/* Table */}
-      <div className="overflow-x-auto rounded-lg border border-gray-700">
-        <table className="min-w-full text-sm text-left">
+      <div className="overflow-auto border border-gray-700 rounded-lg">
+        <table className="min-w-full text-left text-sm">
           <thead className="bg-gray-800 text-gray-300">
             <tr>
               <th className="p-3">#</th>
               <th className="p-3">Name</th>
               <th className="p-3">UI_ID</th>
               <th className="p-3">Email</th>
+              <th className="p-3">Coins</th>
               <th className="p-3">Status</th>
-              <th className="p-3">Action</th>
+              <th className="p-3">Actions</th>
             </tr>
           </thead>
           <tbody className="bg-gray-900">
-            {currentMerchants.length > 0 ? (
-              currentMerchants.map((merchant, idx) => (
-                <tr
-                  key={merchant._id}
-                  className="border-b border-gray-800 hover:bg-gray-800"
-                >
-                  <td className="p-3">{indexOfFirst + idx + 1}</td>
-                  <td className="p-3">{merchant.merchantName}</td>
-                  <td className="p-3">{merchant.ui_id}</td>
-                  <td className="p-3">{merchant.merchantEmail || "-"}</td>
-                  <td className="p-3 text-green-400">{merchant.status || "Pending"}</td>
-                  <td className="p-3 flex flex-wrap gap-2">
-                    {merchant.status === "pending" && (
-                      <button
-                        onClick={() => handleApproveMerchant(merchant.ui_id)}
-                        className="bg-blue-500 hover:bg-blue-600 px-3 py-1 rounded text-xs"
-                      >
-                        Approve
-                      </button>
-                    )}
-                    <button
-                      onClick={() => openDetailModal(merchant)}
-                      className="bg-gray-700 hover:bg-gray-600 px-3 py-1 rounded text-xs"
-                    >
-                      View Details
+            {currentMerchants.map((m, i) => (
+              <tr key={m._id} className="border-b border-gray-800 hover:bg-gray-800">
+                <td className="p-3">{indexOfFirst + i + 1}</td>
+                <td className="p-3">{m.merchantName}</td>
+                <td className="p-3">{m.ui_id}</td>
+                <td className="p-3">{m.merchantEmail}</td>
+                <td className="p-3">{m.coinBalance || 0}</td>
+                <td className="p-3">{m.status}</td>
+                <td className="p-3 space-x-2">
+                  {m.status === "pending" && (
+                    <button onClick={() => handleApprove(m.ui_id)} className="bg-blue-500 px-2 py-1 rounded text-xs">
+                      Approve
                     </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
+                  )}
+                  <button onClick={() => openCoinModal(m.ui_id)} className="bg-yellow-500 px-2 py-1 rounded text-xs">
+                    Add Coins
+                  </button>
+                </td>
+              </tr>
+            ))}
+            {currentMerchants.length === 0 && (
               <tr>
-                <td colSpan="6" className="p-3 text-center text-red-400">
+                <td colSpan={7} className="text-center p-4 text-red-400">
                   No merchants found
                 </td>
               </tr>
@@ -204,83 +185,88 @@ const AllMerchants = () => {
       </div>
 
       {/* Pagination */}
-      {totalPages > 1 && (
-        <div className="flex justify-center mt-4 flex-wrap gap-1">
+      <div className="flex flex-wrap justify-center gap-2 mt-6">
+        {Array.from({ length: totalPages }, (_, i) => (
           <button
-            onClick={() => setCurrentPage((p) => Math.max(p - 1, 1))}
-            disabled={currentPage === 1}
-            className="px-3 py-1 mx-1 bg-gray-700 rounded disabled:opacity-50"
+            key={i}
+            onClick={() => setCurrentPage(i + 1)}
+            className={`px-3 py-1 rounded ${currentPage === i + 1 ? "bg-orange-500" : "bg-gray-700"}`}
           >
-            Prev
+            {i + 1}
           </button>
-          {Array.from({ length: totalPages }, (_, i) => (
-            <button
-              key={i}
-              onClick={() => setCurrentPage(i + 1)}
-              className={`px-3 py-1 mx-1 rounded ${
-                currentPage === i + 1 ? "bg-orange-500" : "bg-gray-700"
-              }`}
-            >
-              {i + 1}
-            </button>
-          ))}
-          <button
-            onClick={() => setCurrentPage((p) => Math.min(p + 1, totalPages))}
-            disabled={currentPage === totalPages}
-            className="px-3 py-1 mx-1 bg-gray-700 rounded disabled:opacity-50"
-          >
-            Next
-          </button>
-        </div>
-      )}
+        ))}
+      </div>
 
-      {/* Add Merchant Modal */}
-      {showAddModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#121212] bg-opacity-80">
-          <div className="bg-gray-900 p-6 rounded-lg w-full max-w-lg">
-            <h2 className="text-lg font-bold mb-4 text-white">Create New Merchant</h2>
-            <div className="grid grid-cols-1 gap-4">
-              {["merchantName", "merchantAddress", "merchantPhoneNumber", "merchantEmail", "merchantLogoUrl"].map(
-                (field) => (
-                  <input
-                    key={field}
-                    name={field}
-                    value={formData[field]}
-                    onChange={handleInputChange}
-                    placeholder={field.replace("merchant", "").replace(/([A-Z])/g, " $1")}
-                    className="px-3 py-2 rounded bg-gray-800 text-white w-full"
-                  />
-                )
-              )}
-            </div>
-            <div className="flex justify-end mt-4 gap-2">
-              <button onClick={() => setShowAddModal(false)} className="bg-gray-600 px-4 py-2 rounded">
+      {/* Add Coin Modal */}
+      {showCoinModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-gray-900 p-6 rounded-lg w-96">
+            <h2 className="text-xl mb-4 text-yellow-400 font-bold">Add Coins</h2>
+            <input
+              type="number"
+              placeholder="Enter coin amount"
+              value={coinAmount}
+              onChange={(e) => setCoinAmount(e.target.value)}
+              className="w-full px-4 py-2 bg-gray-800 text-white rounded mb-4"
+            />
+            <div className="flex justify-end space-x-3">
+              <button onClick={() => setShowCoinModal(false)} className="bg-gray-700 px-4 py-2 rounded">
                 Cancel
               </button>
-              <button onClick={handleCreateMerchant} className="bg-green-600 px-4 py-2 rounded">
-                Submit
+              <button onClick={handleAddCoins} className="bg-yellow-500 px-4 py-2 rounded">
+                Add
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Merchant Detail Modal */}
-      {showDetailModal && selectedMerchant && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-80">
-          <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-lg">
-            <h2 className="text-xl font-semibold mb-4">Merchant Details</h2>
-            <ul className="space-y-2">
-              <li><strong>Name:</strong> {selectedMerchant.merchantName}</li>
-              <li><strong>UI ID:</strong> {selectedMerchant.ui_id}</li>
-              <li><strong>Email:</strong> {selectedMerchant.merchantEmail}</li>
-              <li><strong>Phone:</strong> {selectedMerchant.merchantPhoneNumber}</li>
-              <li><strong>Address:</strong> {selectedMerchant.merchantAddress}</li>
-              <li><strong>Status:</strong> {selectedMerchant.status}</li>
-            </ul>
-            <div className="text-right mt-4">
-              <button onClick={() => setShowDetailModal(false)} className="bg-red-600 px-4 py-2 rounded">
-                Close
+      {/* Add Merchant Modal */}
+      {showAddModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-50">
+          <div className="bg-gray-900 p-6 rounded-lg w-96">
+            <h2 className="text-xl mb-4 font-bold text-green-400">Add New Merchant</h2>
+            <input
+              className="w-full mb-2 px-3 py-2 rounded bg-gray-800"
+              placeholder="Name"
+              name="merchantName"
+              value={formData.merchantName}
+              onChange={(e) => setFormData({ ...formData, merchantName: e.target.value })}
+            />
+            <input
+              className="w-full mb-2 px-3 py-2 rounded bg-gray-800"
+              placeholder="Email"
+              name="merchantEmail"
+              value={formData.merchantEmail}
+              onChange={(e) => setFormData({ ...formData, merchantEmail: e.target.value })}
+            />
+            <input
+              className="w-full mb-2 px-3 py-2 rounded bg-gray-800"
+              placeholder="Phone"
+              name="merchantPhoneNumber"
+              value={formData.merchantPhoneNumber}
+              onChange={(e) => setFormData({ ...formData, merchantPhoneNumber: e.target.value })}
+            />
+            <input
+              className="w-full mb-2 px-3 py-2 rounded bg-gray-800"
+              placeholder="Address"
+              name="merchantAddress"
+              value={formData.merchantAddress}
+              onChange={(e) => setFormData({ ...formData, merchantAddress: e.target.value })}
+            />
+            <input
+              className="w-full mb-4 px-3 py-2 rounded bg-gray-800"
+              placeholder="Logo URL"
+              name="merchantLogoUrl"
+              value={formData.merchantLogoUrl}
+              onChange={(e) => setFormData({ ...formData, merchantLogoUrl: e.target.value })}
+            />
+            <div className="flex justify-end space-x-3">
+              <button onClick={() => setShowAddModal(false)} className="bg-gray-700 px-4 py-2 rounded">
+                Cancel
+              </button>
+              <button onClick={handleCreateMerchant} className="bg-green-500 px-4 py-2 rounded">
+                Create
               </button>
             </div>
           </div>
@@ -291,4 +277,3 @@ const AllMerchants = () => {
 };
 
 export default AllMerchants;
-
