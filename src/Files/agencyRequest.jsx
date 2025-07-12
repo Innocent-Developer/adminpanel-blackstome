@@ -12,8 +12,8 @@ const AgencyManager = () => {
     agencyName: "",
     agencyLogo: "",
   });
-  const [loading, setLoading] = useState(false); // for image upload
-  const [fetching, setFetching] = useState(true); // for initial data
+  const [loading, setLoading] = useState(false);
+  const [fetching, setFetching] = useState(true);
 
   const fetchAgencies = async () => {
     setFetching(true);
@@ -21,9 +21,11 @@ const AgencyManager = () => {
       const res = await axios.get(
         "https://black-stone-voice-chat-room.onrender.com/api/v1/get/all/agency"
       );
-      setAgencies(res.data || []);
+      console.log("Agencies response:", res.data);
+      setAgencies(res.data.data || []);
     } catch (err) {
       console.error("Failed to fetch agencies:", err);
+      setAgencies([]);
     } finally {
       setFetching(false);
     }
@@ -82,7 +84,7 @@ const AgencyManager = () => {
 
   return (
     <div className="min-h-screen bg-[#121212] text-white p-6 relative mt-6">
-      {/* Full-page loader */}
+      {/* Loader */}
       {fetching && (
         <div className="absolute inset-0 bg-[#121212] bg-opacity-90 z-50 flex justify-center items-center">
           <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
@@ -99,26 +101,27 @@ const AgencyManager = () => {
         </button>
       </div>
 
-      {agencies.length === 0 && !fetching ? (
+      {Array.isArray(agencies) && agencies.length === 0 && !fetching ? (
         <p className="text-gray-400">No agencies found.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {agencies.map((agency) => (
-            <div
-              key={agency._id}
-              className="bg-[#1f1f1f] p-4 rounded-lg shadow hover:shadow-lg transition"
-            >
-              <img
-                src={agency.agencyLogo}
-                alt="Logo"
-                className="h-20 w-20 rounded-full object-cover mb-3"
-              />
-              <h3 className="text-lg font-bold">{agency.agencyName}</h3>
-              <p className="text-sm text-gray-400">
-                Creator: {agency.name || "Unknown"}
-              </p>
-            </div>
-          ))}
+          {Array.isArray(agencies) &&
+            agencies.map((agency) => (
+              <div
+                key={agency._id}
+                className="bg-[#1f1f1f] p-4 rounded-lg shadow hover:shadow-lg transition"
+              >
+                <img
+                  src={agency.agencyLogo}
+                  alt="Logo"
+                  className="h-20 w-20 rounded-full object-cover mb-3"
+                />
+                <h3 className="text-lg font-bold">{agency.agencyName}</h3>
+                <p className="text-sm text-gray-400">
+                  Creator: {agency.name || "Unknown"}
+                </p>
+              </div>
+            ))}
         </div>
       )}
 
