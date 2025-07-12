@@ -15,13 +15,13 @@ const AgencyManager = () => {
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
 
+  // Fetch all agencies
   const fetchAgencies = async () => {
     setFetching(true);
     try {
       const res = await axios.get(
         "https://black-stone-voice-chat-room.onrender.com/api/v1/get/all/agency"
       );
-      console.log("Agencies response:", res.data);
       setAgencies(res.data.data || []);
     } catch (err) {
       console.error("Failed to fetch agencies:", err);
@@ -35,6 +35,7 @@ const AgencyManager = () => {
     fetchAgencies();
   }, []);
 
+  // Upload image to Cloudinary
   const handleUploadLogo = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
@@ -42,6 +43,7 @@ const AgencyManager = () => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", "blackstome");
+
     setLoading(true);
     try {
       const res = await axios.post(
@@ -50,25 +52,30 @@ const AgencyManager = () => {
       );
       setForm((prev) => ({ ...prev, agencyLogo: res.data.secure_url }));
     } catch (err) {
+      console.error("Image upload failed:", err);
       alert("Image upload failed.");
     } finally {
       setLoading(false);
     }
   };
 
+  // Create agency
   const handleCreateAgency = async () => {
-    if (!form.agencyName || !form.agencyLogo || !ui_id) {
+    if (!form.agencyName || !form.agencyLogo || !ui_id || !user?.name) {
       return alert("All fields are required.");
     }
 
     const submission = {
-      ...form,
-      name: user?.name || "Unknown",
-      ui_id,
+      agencyName: form.agencyName,
+      agencyLogo: form.agencyLogo,
+      name: user.name,
+      ui_id: ui_id,
     };
 
+    console.log("Submitting agency:", submission); // Debug log
+
     try {
-      await axios.post(
+      const res = await axios.post(
         "https://black-stone-voice-chat-room.onrender.com/api/v1/agency/create",
         submission
       );
@@ -77,8 +84,13 @@ const AgencyManager = () => {
       setForm({ agencyName: "", agencyLogo: "" });
       fetchAgencies();
     } catch (err) {
-      console.error(err);
-      alert(err?.response?.data?.message || "Agency creation failed.");
+      console.error("Agency creation failed:", err);
+      if (err.response) {
+        console.error("Backend response:", err.response.data);
+        alert(err.response.data.message || "Agency creation failed.");
+      } else {
+        alert("Server is not responding.");
+      }
     }
   };
 
@@ -91,6 +103,7 @@ const AgencyManager = () => {
         </div>
       )}
 
+      {/* Header */}
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">All Agencies</h1>
         <button
@@ -101,31 +114,34 @@ const AgencyManager = () => {
         </button>
       </div>
 
+      {/* Agency Grid */}
       {Array.isArray(agencies) && agencies.length === 0 && !fetching ? (
         <p className="text-gray-400">No agencies found.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {Array.isArray(agencies) &&
-            agencies.map((agency) => (
-              <div
-                key={agency._id}
-                className="bg-[#1f1f1f] p-4 rounded-lg shadow hover:shadow-lg transition"
-              >
-                <img
-                  src={agency.agencyLogo}
-                  alt="Logo"
-                  className="h-20 w-20 rounded-full object-cover mb-3"
-                />
-                <h3 className="text-lg font-bold">{agency.agencyName}</h3>
-                <p className="text-sm text-gray-400">
-                  Creator: {agency.name || "Unknown"}
-                </p>
-              </div>
-            ))}
+          {agencies.map((agency) => (
+            <div
+              key={agency._id}
+              className="bg-[#1f1f1f] p-4 rounded-lg shadow hover:shadow-lg transition"
+            >
+              <img
+                src={agency.agencyLogo}
+                alt="Logo"
+                className="h-20 w-20 rounded-full object-cover mb-3"
+              />
+              <h3 className="text-lg font-bold">{agency.agencyName}</h3>
+              <p className="text-sm text-gray-400">
+                ID : {agency.agencyId || "Unknown"}
+              </p>
+              <p className="text-sm text-gray-400">
+                Creator: {agency.name || "Unknown"}
+              </p>
+            </div>
+          ))}
         </div>
       )}
 
-      {/* Modal */}
+      {/* Create Agency Modal */}
       {showModal && (
         <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center">
           <div className="bg-[#1c1c1c] p-6 rounded-lg w-full max-w-md">
