@@ -12,16 +12,20 @@ const AgencyManager = () => {
     agencyName: "",
     agencyLogo: "",
   });
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(false); // for image upload
+  const [fetching, setFetching] = useState(true); // for initial data
 
   const fetchAgencies = async () => {
+    setFetching(true);
     try {
       const res = await axios.get(
-        "http://www.blackstonevoicechatroom.online/api/v1/agency/all"
+        "https://black-stone-voice-chat-room.onrender.com/api/v1/get/all/agency"
       );
       setAgencies(res.data || []);
     } catch (err) {
       console.error("Failed to fetch agencies:", err);
+    } finally {
+      setFetching(false);
     }
   };
 
@@ -57,13 +61,13 @@ const AgencyManager = () => {
 
     const submission = {
       ...form,
-      name: user?.name || "Unknown", // 👈 Auto-set creator's name
+      name: user?.name || "Unknown",
       ui_id,
     };
 
     try {
       await axios.post(
-        "http://www.blackstonevoicechatroom.online/api/v1/agency/create",
+        "https://black-stone-voice-chat-room.onrender.com/api/v1/agency/create",
         submission
       );
       alert("Agency created successfully.");
@@ -77,7 +81,14 @@ const AgencyManager = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#121212] text-white p-6">
+    <div className="min-h-screen bg-[#121212] text-white p-6 relative mt-6">
+      {/* Full-page loader */}
+      {fetching && (
+        <div className="absolute inset-0 bg-[#121212] bg-opacity-90 z-50 flex justify-center items-center">
+          <div className="w-12 h-12 border-4 border-orange-500 border-t-transparent rounded-full animate-spin" />
+        </div>
+      )}
+
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-2xl font-semibold">All Agencies</h1>
         <button
@@ -88,7 +99,7 @@ const AgencyManager = () => {
         </button>
       </div>
 
-      {agencies.length === 0 ? (
+      {agencies.length === 0 && !fetching ? (
         <p className="text-gray-400">No agencies found.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -135,7 +146,9 @@ const AgencyManager = () => {
               onChange={handleUploadLogo}
               className="w-full p-2 mb-3 bg-[#2a2a2a] rounded text-white"
             />
-            {loading && <p className="text-sm text-gray-400">Uploading...</p>}
+            {loading && (
+              <p className="text-sm text-gray-400 mb-2">Uploading...</p>
+            )}
             {form.agencyLogo && (
               <img
                 src={form.agencyLogo}
@@ -143,6 +156,7 @@ const AgencyManager = () => {
                 className="h-24 w-24 object-cover rounded mb-3"
               />
             )}
+
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setShowModal(false)}
@@ -155,7 +169,7 @@ const AgencyManager = () => {
                 className="px-4 py-2 bg-orange-600 hover:bg-orange-700 rounded"
                 disabled={loading}
               >
-                Create
+                {loading ? "Please wait..." : "Create"}
               </button>
             </div>
           </div>
