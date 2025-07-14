@@ -136,6 +136,9 @@ const AgencyManager = () => {
               <p className="text-sm text-gray-400">
                 Creator: {agency.name || "Unknown"}
               </p>
+              <p className="text-sm text-gray-400">
+                Creator ID: {agency.createrId || "Unknown"}
+                </p>
             </div>
           ))}
         </div>
