@@ -17,6 +17,7 @@ export default function Users() {
     isBlocked: false,
     avatarUrl: "",
     ui_id: "",
+     titleTag: "", // new field
   });
 
   useEffect(() => {
@@ -57,6 +58,7 @@ export default function Users() {
       isBlocked: user.isBlocked || false,
       avatarUrl: user.avatarUrl || "",
       ui_id: user.ui_id || "",
+      titleTag: user.titleTag || "",
     });
     setShowEditModal(true);
   };
@@ -93,6 +95,7 @@ export default function Users() {
             isBlocked: formData.isBlocked,
             avatarUrl,
             ui_id: formData.ui_id,
+              titleTag: formData.titleTag, // new field
           },
         }),
       });
@@ -159,6 +162,7 @@ export default function Users() {
               <th className="px-4 py-3 text-left">Diamond</th>
               <th className="px-4 py-3 text-left">Email</th>
               <th className="px-4 py-3 text-left">Phone</th>
+              <th className="px-4 py-3 text-left">Tital</th>
               <th className="px-4 py-3 text-left">Blocked</th>
               <th className="px-4 py-3 text-left">Actions</th>
             </tr>
@@ -178,6 +182,7 @@ export default function Users() {
                 <td className="px-4 py-2">{user.diamond || 0}</td>
                 <td className="px-4 py-2">{user.email || "N/A"}</td>
                 <td className="px-4 py-2">{user.phoneNumber || "N/A"}</td>
+                <td className="px-4 py-2">{user.titleTag || "N/A"}</td>
                 <td className="px-4 py-2 text-red-500">{user.isBlocked ? "true" : "false"}</td>
                 <td className="px-4 py-2 flex flex-col sm:flex-row gap-2">
                   <button onClick={() => openEditModal(user)} className="bg-blue-600 hover:bg-blue-700 px-3 py-1 rounded text-xs">
@@ -215,40 +220,114 @@ export default function Users() {
 
       {/* Edit Modal */}
       {showEditModal && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50">
-          <div className="bg-[#1f1f1f] rounded-lg p-6 w-full max-w-md">
-            <h2 className="text-xl font-semibold mb-4">Edit User</h2>
+  <div className="fixed inset-0 bg-black bg-opacity-80 backdrop-blur-md flex items-center justify-center z-50 animate-fade-in">
+    <div className="bg-gradient-to-br from-[#1a1a1a] to-[#2c2c2c] rounded-2xl shadow-xl p-6 w-full max-w-lg border border-gray-700">
+      <h2 className="text-2xl font-bold text-white mb-6 border-b border-gray-700 pb-2">✏️ Edit User Info</h2>
 
-            <input type="text" placeholder="Name" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
-              value={formData.name} onChange={(e) => setFormData({ ...formData, name: e.target.value })} />
+      <div className="space-y-3">
+        <input
+          type="text"
+          placeholder="👤 Name"
+          className="input-glow"
+          value={formData.name}
+          onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+        />
 
-            <input type="text" placeholder="Phone Number" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
-              value={formData.phoneNumber} onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })} />
+        <input
+          type="text"
+          placeholder="📞 Phone Number"
+          className="input-glow"
+          value={formData.phoneNumber}
+          onChange={(e) => setFormData({ ...formData, phoneNumber: e.target.value })}
+        />
 
-            <input type="number" placeholder="Gold" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
-              value={formData.gold} onChange={(e) => setFormData({ ...formData, gold: +e.target.value })} />
+        <input
+          type="number"
+          placeholder="🪙 Gold"
+          className="input-glow"
+          value={formData.gold}
+          onChange={(e) => setFormData({ ...formData, gold: +e.target.value })}
+        />
 
-            <input type="number" placeholder="Diamond" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
-              value={formData.diamond} onChange={(e) => setFormData({ ...formData, diamond: +e.target.value })} />
+        <input
+          type="number"
+          placeholder="💎 Diamond"
+          className="input-glow"
+          value={formData.diamond}
+          onChange={(e) => setFormData({ ...formData, diamond: +e.target.value })}
+        />
 
-            <div className="flex items-center mb-2">
-              <input type="checkbox" checked={formData.isBlocked} onChange={(e) => setFormData({ ...formData, isBlocked: e.target.checked })} className="mr-2" />
-              <label>Blocked</label>
-            </div>
-
-            <input type="text" placeholder="UID" className="w-full p-2 mb-2 rounded bg-[#121212] border border-gray-600 text-white"
-              value={formData.ui_id} onChange={(e) => setFormData({ ...formData, ui_id: e.target.value })} />
-
-            <input type="file" accept="image/*" className="w-full p-2 mb-4 bg-[#121212] border border-gray-600 text-white"
-              onChange={(e) => setAvatarFile(e.target.files[0])} />
-
-            <div className="flex justify-end gap-2">
-              <button onClick={() => setShowEditModal(false)} className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-700">Cancel</button>
-              <button onClick={handleUpdateUser} className="px-4 py-2 bg-blue-600 rounded hover:bg-blue-700">Save</button>
-            </div>
-          </div>
+        <div className="flex items-center text-white gap-2">
+          <input
+            type="checkbox"
+            checked={formData.isBlocked}
+            onChange={(e) => setFormData({ ...formData, isBlocked: e.target.checked })}
+            className="accent-pink-600"
+          />
+          <label>🚫 Blocked</label>
         </div>
-      )}
+
+        <input
+          type="text"
+          placeholder="🔑 UID"
+          className="input-glow"
+          value={formData.ui_id}
+          onChange={(e) => setFormData({ ...formData, ui_id: e.target.value })}
+        />
+
+        <select
+          className="input-glow text-white"
+          value={formData.titleTag}
+          onChange={(e) => setFormData({ ...formData, titleTag: e.target.value })}
+        >
+          <option value="">🎖 Select Title Tag</option>
+          <option value="App developer">App developer</option>
+          <option value="App owner">App owner</option>
+          <option value="Super admin">Super admin</option>
+          <option value="Admin">Admin</option>
+          <option value="BD">BD</option>
+          <option value="Customer Service">Customer Service</option>
+          <option value="Top 1 Recharge">Top 1 Recharge</option>
+          <option value="Top 2 Recharge">Top 2 Recharge</option>
+          <option value="Top 3 Recharge">Top 3 Recharge</option>
+          <option value="CP Top 1">CP Top 1</option>
+          <option value="CP Top 2">CP Top 2</option>
+          <option value="Pak CS">Pak CS</option>
+          <option value="OFFICIAL Team">OFFICIAL Team</option>
+          <option value="Gredday King">Gredday King</option>
+          <option value="Greeday Queen">Greeday Queen</option>
+          <option value="Agency owner">Agency owner</option>
+          <option value="Official host">Official host</option>
+          <option value="Star host">Star host</option>
+          <option value="Wealth Star">Wealth Star</option>
+        </select>
+
+        <input
+          type="file"
+          accept="image/*"
+          className="input-glow text-white file:bg-gray-700 file:border-0 file:px-4 file:py-2 file:rounded file:text-sm"
+          onChange={(e) => setAvatarFile(e.target.files[0])}
+        />
+      </div>
+
+      <div className="flex justify-end mt-6 gap-4">
+        <button
+          onClick={() => setShowEditModal(false)}
+          className="px-5 py-2 rounded-full bg-gray-700 text-white hover:bg-gray-600 transition duration-200"
+        >
+          Cancel
+        </button>
+        <button
+          onClick={handleUpdateUser}
+          className="px-5 py-2 rounded-full bg-gradient-to-r from-blue-500 to-purple-600 text-white font-semibold hover:from-blue-600 hover:to-purple-700 transition duration-200"
+        >
+          Save
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
     </div>
   );
 }
