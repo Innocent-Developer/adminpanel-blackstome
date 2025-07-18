@@ -21,6 +21,7 @@ import AllMerchants from "./Files/Merchants.jsx";
 import CoinRequests from "./Files/MerchantBuyCoin.jsx";
 import RoomsPage from "./Files/Rooms.jsx";
 import ShopAdminPage from "./Files/ShopPage.jsx";
+import RoomBackGroundRequest from "./Files/RoomBackGroundRequest.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null); // null to delay rendering
@@ -155,6 +156,7 @@ function App() {
             </ProtectedLayout>
           }
         />
+        
         <Route
           path="/shop"
           element={
@@ -163,7 +165,14 @@ function App() {
             </ProtectedLayout>
           }
         />
-
+        <Route
+          path="/room/background"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <RoomBackGroundRequest />
+            </ProtectedLayout>
+          }
+        />
         {/* Redirect unmatched paths */}
         <Route path="*" element={<Navigate to="/" />} />
       </Routes>
