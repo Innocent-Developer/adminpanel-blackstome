@@ -8,7 +8,6 @@ const RoomBackGroundRequest = () => {
   const [actionLoading, setActionLoading] = useState(null);
   const [searchTerm, setSearchTerm] = useState("");
 
-  // Fetch all requests
   const fetchRequests = async () => {
     try {
       const res = await axios.get(
@@ -24,7 +23,6 @@ const RoomBackGroundRequest = () => {
     }
   };
 
-  // Filter logic
   const handleSearch = (e) => {
     const term = e.target.value.trim();
     setSearchTerm(term);
@@ -39,7 +37,6 @@ const RoomBackGroundRequest = () => {
     setFiltered(result);
   };
 
-  // Approve or reject
   const handleAction = async (requestId, action) => {
     const confirmMsg = `Are you sure you want to ${action.toUpperCase()} this request?`;
     if (!window.confirm(confirmMsg)) return;
@@ -70,54 +67,63 @@ const RoomBackGroundRequest = () => {
   }, []);
 
   return (
-    <div className="p-4 max-w-6xl mx-auto">
-      <h2 className="text-2xl font-bold mb-4">Background Change Requests</h2>
+    <div className="p-4 sm:p-6 max-w-6xl mx-auto">
+      <h2 className="text-3xl font-bold text-white mb-6">🎨 Background Change Requests</h2>
 
       {/* Search Bar */}
-      <div className="mb-4">
+      <div className="mb-6">
         <input
           type="text"
-          placeholder="Search by Room ID or UI_ID..."
+          placeholder="🔍 Search by Room ID or UI_ID..."
           value={searchTerm}
           onChange={handleSearch}
-          className="w-full p-2 border rounded shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          className="w-full p-3 rounded-md bg-[#1f1f1f] border border-gray-700 text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
         />
       </div>
 
-      {/* Requests List */}
+      {/* Requests */}
       {loading ? (
-        <p className="text-gray-600">Loading requests...</p>
+        <p className="text-gray-400">Loading requests...</p>
       ) : filtered.length === 0 ? (
         <p className="text-gray-500">No requests found.</p>
       ) : (
-        <div className="space-y-4">
+        <div className="grid gap-6">
           {filtered.map((req) => (
             <div
               key={req._id}
-              className="bg-white p-4 rounded shadow border space-y-2"
+              className="bg-[#111827] text-white p-4 sm:p-6 rounded-xl border border-gray-700 shadow-md transition hover:shadow-lg"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
-                <div>
-                  <p><strong>Room ID:</strong> {req.RoomId}</p>
-                  <p><strong>UI_ID:</strong> {req.ui_id}</p>
-                  <p><strong>Status:</strong> 
-                    <span className={`ml-1 font-semibold ${req.status === 'approved' ? 'text-green-600' : req.status === 'rejected' ? 'text-red-600' : 'text-yellow-600'}`}>
+              <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                <div className="space-y-1">
+                  <p><span className="font-semibold">Room ID:</span> {req.RoomId}</p>
+                  <p><span className="font-semibold">UI_ID:</span> {req.ui_id}</p>
+                  <p className="flex items-center gap-2">
+                    <span className="font-semibold">Status:</span>
+                    <span
+                      className={`px-3 py-0.5 rounded-full text-sm font-medium
+                      ${req.status === "approved"
+                          ? "bg-green-700 text-green-100"
+                          : req.status === "rejected"
+                          ? "bg-red-700 text-red-100"
+                          : "bg-yellow-600 text-yellow-100"}`}
+                    >
                       {req.status}
                     </span>
                   </p>
                 </div>
-                <div className="mt-3 sm:mt-0 flex gap-2">
+
+                <div className="flex flex-wrap gap-3">
                   <button
                     onClick={() => handleAction(req._id, "approve")}
                     disabled={actionLoading === req._id + "-approve"}
-                    className="bg-green-600 text-white px-4 py-1 rounded hover:bg-green-700 disabled:opacity-50"
+                    className="bg-green-600 hover:bg-green-700 px-4 py-1.5 rounded-md text-sm font-semibold text-white disabled:opacity-50 transition"
                   >
                     {actionLoading === req._id + "-approve" ? "Approving..." : "Approve"}
                   </button>
                   <button
                     onClick={() => handleAction(req._id, "reject")}
                     disabled={actionLoading === req._id + "-reject"}
-                    className="bg-red-600 text-white px-4 py-1 rounded hover:bg-red-700 disabled:opacity-50"
+                    className="bg-red-600 hover:bg-red-700 px-4 py-1.5 rounded-md text-sm font-semibold text-white disabled:opacity-50 transition"
                   >
                     {actionLoading === req._id + "-reject" ? "Rejecting..." : "Reject"}
                   </button>
@@ -125,11 +131,13 @@ const RoomBackGroundRequest = () => {
               </div>
 
               {req.backgroundImage && (
-                <img
-                  src={req.backgroundImage}
-                  alt="Requested Background"
-                  className="mt-2 w-full max-w-xs rounded border"
-                />
+                <div className="mt-4">
+                  <img
+                    src={req.backgroundImage}
+                    alt="Requested Background"
+                    className="w-full max-w-sm rounded-lg border border-gray-600 shadow-sm hover:shadow-lg transition"
+                  />
+                </div>
               )}
             </div>
           ))}

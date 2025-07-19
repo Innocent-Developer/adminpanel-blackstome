@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import AdminRoomChatPopup from "../Compontents/chatPage";
+import { NavLink } from "react-router-dom";
 
 const RoomManager = () => {
   const [rooms, setRooms] = useState([]);
@@ -27,6 +28,8 @@ const RoomManager = () => {
     members: [],
     ui_id: adminUiId,
   });
+  const [currentPage, setCurrentPage] = useState(1);
+  const roomsPerPage = 10;
 
   useEffect(() => {
     fetchRooms();
@@ -179,6 +182,16 @@ const RoomManager = () => {
       room.roomName.toLowerCase().includes(searchTerm.toLowerCase()) ||
       room.roomId.toLowerCase().includes(searchTerm.toLowerCase())
   );
+  const totalPages = Math.ceil(filteredRooms.length / roomsPerPage);
+const startIndex = (currentPage - 1) * roomsPerPage;
+const currentRooms = filteredRooms.slice(startIndex, startIndex + roomsPerPage);
+
+const goToPage = (page) => {
+  if (page >= 1 && page <= totalPages) {
+    setCurrentPage(page);
+  }
+};
+
 
   return (
     <div className="min-h-screen bg-[#0e0e0e] text-white p-4 sm:p-6 md:p-10">
@@ -186,81 +199,126 @@ const RoomManager = () => {
         Room Manager
       </h1>
 
-      <div className="flex flex-col md:flex-row md:items-center gap-4 mb-6">
-        <input
-          type="text"
-          placeholder="Search by room name || room ID"
-          className="w-full md:w-1/2 p-2 rounded-md text-black"
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-        />
-        <button
-          onClick={() => setShowCreateModal(true)}
-          className="bg-green-600 hover:bg-green-700 px-4 py-2 rounded-md text-white"
-        >
-          Create Room
-        </button>
-      </div>
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-8 bg-white dark:bg-gray-900 p-4 rounded-2xl shadow-lg transition-all">
+  <input
+    type="text"
+    placeholder="🔍 Search by room name or ID..."
+    className="w-full md:w-[45%] px-4 py-2 rounded-xl border border-gray-300 dark:border-gray-700 focus:ring-2 focus:ring-green-500 focus:outline-none text-gray-800 dark:text-white bg-gray-100 dark:bg-gray-800 placeholder:text-gray-500"
+    value={searchTerm}
+    onChange={(e) => setSearchTerm(e.target.value)}
+  />
 
-      <div className="overflow-auto rounded-lg shadow border border-gray-700">
-        <table className="min-w-full text-sm md:text-base text-left">
-          <thead className="bg-[#1f1f1f] text-gray-200">
-            <tr>
-              <th className="px-4 py-3 border">Room Name</th>
-              <th className="px-4 py-3 border">Room ID</th>
-              <th className="px-4 py-3 border">Label</th>
-              <th className="px-4 py-3 border">Max Users</th>
-              <th className="px-4 py-3 border">Banned</th>
-              <th className="px-4 py-3 border text-center">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredRooms.map((room) => (
-              <tr key={room._id} className="border-t border-gray-800">
-                <td className="px-4 py-2 text-center">{room.roomName}</td>
-                <td className="px-4 py-2 text-center">{room.roomId}</td>
-                <td className="px-4 py-2 text-center">{room.roomLabel}</td>
-                <td className="px-4 py-2 text-center">{room.maxUsers}</td>
-                <td className="px-4 py-2 text-center">
-                  {room.roomBan?.isBanned ? "Yes" : "No"}
-                </td>
-                <td className="border p-2 flex gap-2 justify-center">
-                  <button
-                    onClick={() => deleteRoom(room.roomId)}
-                    className="bg-red-600 px-3 py-1 rounded"
-                  >
-                    Delete
-                  </button>
-                  <button
-                    onClick={() => toggleBanStatus(room)}
-                    className="bg-yellow-600 px-3 py-1 rounded"
-                  >
-                    {room.roomBan?.isBanned ? "Unban" : "Ban"}
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedRoomDetails(room);
-                      setShowDetailsModal(true);
-                    }}
-                    className="bg-blue-600 px-3 py-1 rounded"
-                  >
-                    View
-                  </button>
-                  <button
-                    onClick={() => {
-                      setJoiningRoom(room);
-                      handleJoinRoom(room);
-                    }}
-                    className="bg-purple-600 px-3 py-1 rounded"
-                  >
-                    Join
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+  <div className="flex flex-col sm:flex-row gap-3 md:gap-4 w-full md:w-auto">
+    <button
+      onClick={() => setShowCreateModal(true)}
+      className="bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-600 hover:to-emerald-700 transition-all px-5 py-2 rounded-xl text-white font-semibold shadow-md hover:shadow-lg"
+    >
+      ➕ Create Room
+    </button>
+
+    <NavLink
+      to="background"
+      className="bg-gradient-to-r from-yellow-400 to-yellow-600 hover:from-yellow-500 hover:to-yellow-700 transition-all px-5 py-2 rounded-xl text-white font-semibold shadow-md hover:shadow-lg text-center"
+    >
+      🎨 Background Requests
+    </NavLink>
+  </div>
+</div>
+
+
+     <div className="overflow-auto rounded-xl shadow border border-gray-700">
+  <table className="min-w-full text-sm md:text-base text-left">
+    <thead className="bg-[#1f1f1f] text-gray-200">
+      <tr>
+        <th className="px-4 py-3 border">Room Name</th>
+        <th className="px-4 py-3 border">Room ID</th>
+        <th className="px-4 py-3 border">Label</th>
+        <th className="px-4 py-3 border">Max Users</th>
+        <th className="px-4 py-3 border">Banned</th>
+        <th className="px-4 py-3 border text-center">Actions</th>
+      </tr>
+    </thead>
+    <tbody>
+      {currentRooms.map((room) => (
+        <tr key={room._id} className="border-t border-gray-800 hover:bg-gray-800 transition">
+          <td className="px-4 py-2 text-center">{room.roomName}</td>
+          <td className="px-4 py-2 text-center">{room.roomId}</td>
+          <td className="px-4 py-2 text-center">{room.roomLabel}</td>
+          <td className="px-4 py-2 text-center">{room.maxUsers}</td>
+          <td className="px-4 py-2 text-center">
+            {room.roomBan?.isBanned ? "Yes" : "No"}
+          </td>
+          <td className="border p-2 flex gap-2 justify-center whitespace-nowrap overflow-x-auto">
+  <button
+    onClick={() => deleteRoom(room.roomId)}
+    className="bg-red-600 hover:bg-red-700 text-white px-3 py-1 rounded"
+  >
+    Delete
+  </button>
+  <button
+    onClick={() => toggleBanStatus(room)}
+    className="bg-yellow-600 hover:bg-yellow-700 text-white px-3 py-1 rounded"
+  >
+    {room.roomBan?.isBanned ? "Unban" : "Ban"}
+  </button>
+  <button
+    onClick={() => {
+      setSelectedRoomDetails(room);
+      setShowDetailsModal(true);
+    }}
+    className="bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded"
+  >
+    View
+  </button>
+  <button
+    onClick={() => {
+      setJoiningRoom(room);
+      handleJoinRoom(room);
+    }}
+    className="bg-purple-600 hover:bg-purple-700 text-white px-3 py-1 rounded"
+  >
+    Join
+  </button>
+</td>
+
+        </tr>
+      ))}
+    </tbody>
+  </table>
+  <div className="flex justify-center items-center gap-2 mt-4">
+  <button
+    onClick={() => goToPage(currentPage - 1)}
+    disabled={currentPage === 1}
+    className="px-3 py-1 rounded-md bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
+  >
+    Prev
+  </button>
+
+  {[...Array(totalPages)].map((_, index) => (
+    <button
+      key={index}
+      onClick={() => goToPage(index + 1)}
+      className={`px-3 py-1 rounded-md ${
+        currentPage === index + 1
+          ? 'bg-green-600 text-white'
+          : 'bg-gray-700 text-white hover:bg-gray-600'
+      }`}
+    >
+      {index + 1}
+    </button>
+  ))}
+
+  <button
+    onClick={() => goToPage(currentPage + 1)}
+    disabled={currentPage === totalPages}
+    className="px-3 py-1 rounded-md bg-gray-700 text-white hover:bg-gray-600 disabled:opacity-50"
+  >
+    Next
+  </button>
+</div>
+
+</div>
+
 
       {/* Ban Modal */}
       {showBanModal && (
