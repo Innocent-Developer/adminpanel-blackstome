@@ -30,6 +30,7 @@ const menuItems = [
   { label: "Merchants", icon: BarChart2 },
   { label: "MerchantsCoins", icon: BarChart2 },
   { label: "Shop", icon: Gift },
+  { label: "Gifts", icon: Gift },
   { label: "Room", icon: Mic },
   { label: "Agency System", icon: UserCheck },
   { label: "Posts", icon: Image },

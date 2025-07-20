@@ -22,6 +22,7 @@ import CoinRequests from "./Files/MerchantBuyCoin.jsx";
 import RoomsPage from "./Files/Rooms.jsx";
 import ShopAdminPage from "./Files/ShopPage.jsx";
 import RoomBackGroundRequest from "./Files/RoomBackGroundRequest.jsx";
+import GiftAdminPage from "./Files/Gifts.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null); // null to delay rendering
@@ -170,6 +171,14 @@ function App() {
           element={
             <ProtectedLayout isAuthenticated={isAuthenticated}>
               <RoomBackGroundRequest />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/gifts"
+          element={
+            <ProtectedLayout isAuthenticated={isAuthenticated}>
+              <GiftAdminPage />
             </ProtectedLayout>
           }
         />
