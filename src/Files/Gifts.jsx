@@ -18,7 +18,7 @@ const GiftAdminPage = () => {
   const fetchGifts = async () => {
     try {
       const res = await axios.get(
-        "http://www.blackstonevoicechatroom.online/api/v2/client/gift/get/all"
+        "https://www.blackstonevoicechatroom.online/api/v2/client/gift/get/all"
       );
       setGifts(res.data?.gifts || []);
     } catch (err) {
@@ -96,7 +96,7 @@ const GiftAdminPage = () => {
 
     try {
       const res = await axios.post(
-        "http://www.blackstonevoicechatroom.online/api/v2/admin/gift/create",
+        "https://www.blackstonevoicechatroom.online/api/v2/admin/gift/create",
         form
       );
 
