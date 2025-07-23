@@ -60,7 +60,7 @@ export default function Sidebar() {
     <>
       {/* Mobile Top Bar */}
       <div className="md:hidden  gap-1 text-white  items-center px-4 py-4 shadow w-full h-16 bg-[#121212] flex justify-between fixed top-0 left-0 z-50 mb-4">
-        <span className="text-xl font-semibold">Black Stone</span>
+        <span className="text-xl font-semibold">Fun Chat Party</span>
         <button onClick={() => setIsMobileOpen(!isMobileOpen)}>
           {isMobileOpen ? (
             <X className="w-6 h-6" />
@@ -86,7 +86,7 @@ export default function Sidebar() {
       >
         {/* Sidebar Header */}
         <div className="p-4 border-b border-[#333] flex justify-between items-center">
-          <span className="text-xl font-bold">Black Stone </span>
+          <span className="text-xl font-bold">Fun Chat Party</span>
           <button onClick={() => setIsMobileOpen(false)} className="md:hidden">
             <X className="w-5 h-5" />
           </button>
