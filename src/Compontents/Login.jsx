@@ -46,7 +46,7 @@ const Login = ({ setIsAuthenticated }) => {
       <div className="bg-[#2a2a2a] text-white rounded-xl shadow-lg p-8 w-full max-w-md">
         <div className="flex flex-col items-center mb-6">
           <img
-            src="https://res.cloudinary.com/dha65z0gy/image/upload/v1750568548/banners/g8682gvbhfutdriyrysw.jpg"
+            src="https://www.funchatparty.online/logo.jpeg"
             alt="Logo"
             className="w-20 h-20 mb-2"
           />
