@@ -70,7 +70,7 @@ const OfficialMessage = () => {
       await axios.post(
         'https://www.blackstonevoicechatroom.online/chats/users/admin/send',
         { title, content, image },
-        { headers: { userId: user?._id } }
+        { headers: { userId: user?._id } , withCredentials: true}
       );
       setMessage('Message sent successfully.');
       setTitle('');
