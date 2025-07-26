@@ -20,7 +20,7 @@ const OfficialMessage = () => {
   const fetchMessages = async () => {
     try {
       const res = await axios.get(
-        'https://www.blackstonevoicechatroom.online/chats/users/admin/get/messages',
+        'https://www.blackstonevoicechatroom.online/chats/users/admin/messages',
         { headers: { userId: user?._id } }
       );
       setMessages(res.data);
