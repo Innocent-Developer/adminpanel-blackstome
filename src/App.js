@@ -4,7 +4,7 @@ import {
   Route,
   Navigate,
 } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import Login from "./Compontents/Login.jsx";
 import Dashboard from "./Files/Dashboard.jsx";
 import Users from "./Files/Users.jsx";
@@ -26,11 +26,83 @@ import GiftAdminPage from "./Files/Gifts.jsx";
 
 function App() {
   const [isAuthenticated, setIsAuthenticated] = useState(null); // null to delay rendering
+  const inactivityTimerRef = useRef(null);
+  const INACTIVITY_LIMIT_MS = 5 * 60 * 1000; // 5 minutes
+
+  const logout = () => {
+    try {
+      localStorage.removeItem("token");
+      localStorage.removeItem("user");
+      localStorage.removeItem("isLoggedIn");
+      localStorage.removeItem("lastActivity");
+    } catch (e) {
+      // noop
+    }
+    setIsAuthenticated(false);
+  };
 
   useEffect(() => {
     const token = localStorage.getItem("token");
-    setIsAuthenticated(!!token);
+    if (!token) {
+      setIsAuthenticated(false);
+      return;
+    }
+
+    const lastActivityStr = localStorage.getItem("lastActivity");
+    const lastActivity = lastActivityStr ? Number(lastActivityStr) : Date.now();
+
+    if (Date.now() - lastActivity > INACTIVITY_LIMIT_MS) {
+      logout();
+      return;
+    }
+
+    // Ensure we have a baseline lastActivity
+    localStorage.setItem("lastActivity", String(Date.now()));
+    setIsAuthenticated(true);
   }, []);
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+      return;
+    }
+
+    const resetInactivityTimer = () => {
+      localStorage.setItem("lastActivity", String(Date.now()));
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+      }
+      inactivityTimerRef.current = setTimeout(() => {
+        logout();
+      }, INACTIVITY_LIMIT_MS);
+    };
+
+    const events = [
+      "mousemove",
+      "mousedown",
+      "keydown",
+      "scroll",
+      "touchstart",
+      "click",
+      "visibilitychange",
+    ];
+
+    events.forEach((event) => window.addEventListener(event, resetInactivityTimer));
+
+    // Start timer immediately on auth
+    resetInactivityTimer();
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, resetInactivityTimer));
+      if (inactivityTimerRef.current) {
+        clearTimeout(inactivityTimerRef.current);
+        inactivityTimerRef.current = null;
+      }
+    };
+  }, [isAuthenticated]);
 
   // Show loading until auth is checked
   if (isAuthenticated === null) {
@@ -157,7 +229,7 @@ function App() {
             </ProtectedLayout>
           }
         />
-        
+
         <Route
           path="/shop"
           element={

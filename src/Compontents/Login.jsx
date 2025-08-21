@@ -27,6 +27,7 @@ const Login = ({ setIsAuthenticated }) => {
         localStorage.setItem("token", token);
         localStorage.setItem("user", JSON.stringify(user));
         localStorage.setItem("isLoggedIn", "true"); // ✅ Add this
+        localStorage.setItem("lastActivity", String(Date.now()));
 
         setIsAuthenticated(true); // Optional: update global auth state
         navigate("/dashboard");
