@@ -26,6 +26,7 @@ export default function ShopAdminPage() {
   const [showModal, setShowModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
 
   const canvasRef = useRef(null);
   const playerRef = useRef(null);
@@ -53,31 +54,46 @@ export default function ShopAdminPage() {
       ? items
       : items.filter((item) => item.category === selectedCategory);
 
-  // ⬇️ Direct Upload to R2
+  // ⬇️ Direct Upload to R2 with progress tracking
   const handleImageUpload = async (file) => {
-    const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+    try {
+      setUploadProgress(0);
+      
+      // Import AWS SDK dynamically to reduce bundle size
+      const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
+      
+      const s3 = new S3Client({
+        region: "auto",
+        endpoint: ENDPOINT,
+        credentials: {
+          accessKeyId: R2_ACCESS_KEY_ID,
+          secretAccessKey: R2_SECRET_ACCESS_KEY,
+        },
+      });
 
-    const s3 = new S3Client({
-      region: "auto",
-      endpoint: ENDPOINT,
-      credentials: {
-        accessKeyId: R2_ACCESS_KEY_ID,
-        secretAccessKey: R2_SECRET_ACCESS_KEY,
-      },
-    });
+      // Generate unique file key
+      const fileExtension = file.name.split('.').pop();
+      const fileKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
 
-    const fileKey = `${Date.now()}-${file.name}`;
+      const command = new PutObjectCommand({
+        Bucket: BUCKET,
+        Key: fileKey,
+        Body: file,
+        ContentType: file.type,
+        ACL: 'public-read', // Ensure the file is publicly accessible
+      });
 
-    const command = new PutObjectCommand({
-      Bucket: BUCKET,
-      Key: fileKey,
-      Body: file,
-      ContentType: file.type,
-    });
-
-    await s3.send(command);
-
-    return `${PUBLIC_URL}/${fileKey}`;
+      await s3.send(command);
+      
+      // Return the public URL
+      return `${PUBLIC_URL}/${fileKey}`;
+    } catch (error) {
+      console.error("Upload failed:", error);
+      throw new Error("Failed to upload file to storage");
+    } finally {
+      setUploadProgress(100);
+      setTimeout(() => setUploadProgress(0), 1000);
+    }
   };
 
   const handleSubmit = async (e) => {
@@ -86,8 +102,9 @@ export default function ShopAdminPage() {
     try {
       let fileUrl = previewUrl;
 
-      if (form.itemPic) {
-        fileUrl = await handleImageUpload(form.itemPic); // upload directly to R2
+      // If there's a new file to upload
+      if (form.itemPic && typeof form.itemPic !== 'string') {
+        fileUrl = await handleImageUpload(form.itemPic);
       }
 
       const payload = {
@@ -144,7 +161,7 @@ export default function ShopAdminPage() {
         "14day": item.itemPrices?.["14day"] || "",
         "30day": item.itemPrices?.["30day"] || "",
       },
-      itemPic: null,
+      itemPic: item.itemPic, // Keep as URL string for existing images
       category: item.category || "Entrance",
     });
     setPreviewUrl(item.itemPic || null);
@@ -173,9 +190,9 @@ export default function ShopAdminPage() {
 
   const handleFileChange = (e) => {
     const file = e.target.files[0];
-    setForm({ ...form, itemPic: file });
-
     if (!file) return setPreviewUrl(null);
+    
+    setForm({ ...form, itemPic: file });
 
     const isSVGA = file.name?.endsWith(".svga");
 
@@ -250,7 +267,7 @@ export default function ShopAdminPage() {
       </div>
 
       {/* Loader */}
-      {loading && (
+      {loading && !showModal && (
         <div className="flex justify-center my-10">
           <Loader2 className="animate-spin text-white" size={36} />
         </div>
@@ -264,6 +281,9 @@ export default function ShopAdminPage() {
               src={item.itemPic}
               alt={item.itemName}
               className="w-full h-30 sm:h-48 object-cover rounded-lg mb-3"
+              onError={(e) => {
+                e.target.src = "https://via.placeholder.com/200x200/1a1a2e/ffffff?text=Image+Not+Found";
+              }}
             />
             <div>
               <h4 className="text-lg font-semibold mb-1">{item.itemName}</h4>
@@ -334,6 +354,8 @@ export default function ShopAdminPage() {
                       })
                     }
                     required
+                    min="0"
+                    step="0.01"
                     className="bg-gray-800 border border-gray-600 p-2 rounded-lg text-white"
                   />
                 ))}
@@ -349,12 +371,30 @@ export default function ShopAdminPage() {
                     <option key={cat}>{cat}</option>
                   ))}
               </select>
-              <input
-                type="file"
-                accept=".svga,image/*"
-                onChange={handleFileChange}
-                className="text-white"
-              />
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Item Image/File
+                </label>
+                <input
+                  type="file"
+                  accept=".svga,image/*"
+                  onChange={handleFileChange}
+                  className="w-full text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
+                />
+                {uploadProgress > 0 && uploadProgress < 100 && (
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-700 rounded-full h-2.5">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full" 
+                        style={{ width: `${uploadProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Uploading: {Math.round(uploadProgress)}%</p>
+                  </div>
+                )}
+              </div>
+              
               {form.itemPic?.name?.endsWith(".svga") ? (
                 <canvas
                   ref={canvasRef}
@@ -368,10 +408,18 @@ export default function ShopAdminPage() {
                   alt="Preview"
                   className="w-full h-40 object-cover rounded mt-2"
                 />
+              ) : form.itemPic && typeof form.itemPic === 'string' ? (
+                <img
+                  src={form.itemPic}
+                  alt="Current"
+                  className="w-full h-40 object-cover rounded mt-2"
+                />
               ) : null}
+              
               <button
                 type="submit"
-                className="w-full bg-gradient-to-r from-purple-500 to-blue-600 py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90"
+                disabled={loading || uploadProgress > 0}
+                className="w-full bg-gradient-to-r from-purple-500 to-blue-600 py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
                   <>

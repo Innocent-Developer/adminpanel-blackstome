@@ -11,6 +11,7 @@
     "client-s3": "github:aws-sdk/client-s3",
     "dayjs": "^1.11.13",
     "emoji-picker-react": "^4.12.3",
+    "lib-storage": "github:aws-sdk/lib-storage",
     "lucide-react": "^0.519.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
