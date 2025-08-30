@@ -1,6 +1,15 @@
 import { useState, useEffect, useRef } from "react";
 import { Trash2, Edit, X, Loader2, Plus } from "lucide-react";
-import { SHOP_API } from "../Apis/api";
+
+// API endpoints
+const BASE_URL= "https://www.blackstonevoicechatroom.online";
+const SHOP_API = {
+CREATE: `${BASE_URL}/shop/create`,
+  ITEMS: `${BASE_URL}/shop/items`,
+  UPDATE: `${BASE_URL}/shop/update/item`,
+  DELETE: `${BASE_URL}/shop/delete/item`,
+  UPLOAD: `${BASE_URL}/upload/file`, // The upload endpoint from your screenshot
+};
 
 const categories = ["All", "Entrance", "Frame", "Bubblechat", "Theme"];
 
@@ -47,7 +56,7 @@ export default function ShopAdminPage() {
       ? items
       : items.filter((item) => item.category === selectedCategory);
 
-  // Upload file using the provided API endpoint
+  // Upload file using the API endpoint from your screenshot
   const handleImageUpload = async (file) => {
     try {
       setUploadProgress(0);
@@ -71,12 +80,10 @@ export default function ShopAdminPage() {
           if (xhr.status >= 200 && xhr.status < 300) {
             try {
               const response = JSON.parse(xhr.responseText);
-              // Assuming the API returns the file URL in a 'fileUrl' field
-              const fileUrl = response.fileUrl || response.url || response.location;
-              if (fileUrl) {
-                resolve(fileUrl);
+              if (response.success && response.fileUrl) {
+                resolve(response.fileUrl);
               } else {
-                reject(new Error("No file URL returned from server"));
+                reject(new Error(response.message || "Upload failed"));
               }
             } catch (error) {
               reject(new Error("Failed to parse server response"));
@@ -90,14 +97,14 @@ export default function ShopAdminPage() {
           reject(new Error("Upload failed due to network error"));
         });
         
-        xhr.open("POST", "https://www.blackstonavoicechatroom.online/upload/file");
+        xhr.open("POST", SHOP_API.UPLOAD);
         xhr.send(formData);
       });
       
     } catch (error) {
       console.error("Upload failed:", error);
       setUploadError(error.message);
-      throw new Error("Failed to upload file to storage");
+      throw error;
     }
   };
 
@@ -125,18 +132,19 @@ export default function ShopAdminPage() {
         },
       };
 
-      const url = isEditMode ? SHOP_API.UPDATE : SHOP_API.CREATE;
+      const url = isEditMode ? `${SHOP_API.UPDATE}/${editId}` : SHOP_API.CREATE;
       const method = isEditMode ? "PUT" : "POST";
 
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(
-          isEditMode ? { ...payload, _id: editId } : payload
-        ),
+        body: JSON.stringify(payload),
       });
 
-      if (!res.ok) throw new Error("Failed to submit item.");
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to submit item");
+      }
 
       setForm({
         itemName: "",
@@ -152,6 +160,7 @@ export default function ShopAdminPage() {
 
       fetchItems();
     } catch (err) {
+      setUploadError(err.message);
       alert(err.message);
     } finally {
       setLoading(false);
@@ -169,7 +178,7 @@ export default function ShopAdminPage() {
         "14day": item.itemPrices?.["14day"] || "",
         "30day": item.itemPrices?.["30day"] || "",
       },
-      itemPic: item.itemPic, // Keep as URL string for existing images
+      itemPic: item.itemPic,
       category: item.category || "Entrance",
     });
     setPreviewUrl(item.itemPic || null);
@@ -177,17 +186,16 @@ export default function ShopAdminPage() {
     if (playerRef.current?.clear) playerRef.current.clear();
   };
 
-  const handleDelete = async (itemCode) => {
-    if (!window.confirm("Delete this item?")) return;
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this item?")) return;
     setLoading(true);
     try {
-      const res = await fetch(SHOP_API.DELETE, {
+      const res = await fetch(`${SHOP_API.DELETE}/${id}`, {
         method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ itemCode }),
       });
 
-      if (!res.ok) throw new Error("Failed to delete item.");
+      if (!res.ok) throw new Error("Failed to delete item");
+      
       fetchItems();
     } catch (err) {
       alert(err.message);
@@ -276,7 +284,7 @@ export default function ShopAdminPage() {
           className="bg-gray-800 text-white py-2 px-4 rounded-lg border border-gray-700 w-full sm:w-auto"
         >
           {categories.map((cat) => (
-            <option key={cat}>{cat}</option>
+            <option key={cat} value={cat}>{cat}</option>
           ))}
         </select>
       </div>
@@ -295,7 +303,7 @@ export default function ShopAdminPage() {
             <img
               src={item.itemPic}
               alt={item.itemName}
-              className="w-full h-30 sm:h-48 object-cover rounded-lg mb-3"
+              className="w-full h-48 object-cover rounded-lg mb-3"
               onError={(e) => {
                 e.target.src = "https://via.placeholder.com/200x200/1a1a2e/ffffff?text=Image+Not+Found";
               }}
@@ -316,7 +324,7 @@ export default function ShopAdminPage() {
                   <Edit size={16} />
                 </button>
                 <button
-                  onClick={() => handleDelete(item.itemCode || item._id)}
+                  onClick={() => handleDelete(item._id)}
                   className="bg-red-500 hover:bg-red-600 p-2 rounded-md"
                 >
                   <Trash2 size={16} />
@@ -326,6 +334,13 @@ export default function ShopAdminPage() {
           </div>
         ))}
       </div>
+
+      {/* Empty state */}
+      {!loading && filteredItems.length === 0 && (
+        <div className="text-center py-10">
+          <p className="text-gray-400">No items found. Create your first item!</p>
+        </div>
+      )}
 
       {/* Create/Edit Modal */}
       {showModal && (
@@ -357,7 +372,7 @@ export default function ShopAdminPage() {
                   <input
                     key={period}
                     type="number"
-                    placeholder={`${period}-price`}
+                    placeholder={`${period} price`}
                     value={form.itemPrices[period]}
                     onChange={(e) =>
                       setForm({
@@ -383,7 +398,7 @@ export default function ShopAdminPage() {
                 {categories
                   .filter((cat) => cat !== "All")
                   .map((cat) => (
-                    <option key={cat}>{cat}</option>
+                    <option key={cat} value={cat}>{cat}</option>
                   ))}
               </select>
               
