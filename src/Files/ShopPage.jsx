@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Trash2, Edit, X, Loader2, Plus } from "lucide-react";
 import { SHOP_API } from "../Apis/api";
 
-// R2 Configuration (Using your actual values)
+// R2 Configuration
 const R2_ACCESS_KEY_ID = "a687dd055c09de53fceaceeb64af5634";
 const R2_SECRET_ACCESS_KEY = "f7525ae3acf21b00132a10cef812129f986e1bbe7acaebab0db56b1dccbe788c";
 const BUCKET = "funchatparty";
@@ -54,6 +54,93 @@ export default function ShopAdminPage() {
       ? items
       : items.filter((item) => item.category === selectedCategory);
 
+  // AWS Signature V4 for R2 Upload
+  const getSignature = async (method, path, headers = {}) => {
+    // In a production app, this should call a backend API to generate the signature
+    // For demo purposes, we're generating it in the frontend (not secure for production)
+    
+    const region = 'auto';
+    const service = 's3';
+    const date = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+    const dateShort = date.slice(0, 8);
+    
+    // Canonical request
+    const canonicalHeaders = Object.entries({
+      host: ENDPOINT.replace('https://', ''),
+      'x-amz-date': date,
+      ...headers
+    })
+      .map(([k, v]) => `${k.toLowerCase()}:${v}`)
+      .sort()
+      .join('\n');
+    
+    const signedHeaders = Object.keys({
+      host: ENDPOINT.replace('https://', ''),
+      'x-amz-date': date,
+      ...headers
+    })
+      .map(k => k.toLowerCase())
+      .sort()
+      .join(';');
+    
+    const canonicalRequest = [
+      method,
+      path,
+      '',
+      canonicalHeaders + '\n',
+      signedHeaders,
+      'UNSIGNED-PAYLOAD'
+    ].join('\n');
+    
+    // String to sign
+    const credentialScope = `${dateShort}/${region}/${service}/aws4_request`;
+    const hashedCanonicalRequest = await sha256(canonicalRequest);
+    
+    const stringToSign = [
+      'AWS4-HMAC-SHA256',
+      date,
+      credentialScope,
+      hashedCanonicalRequest
+    ].join('\n');
+    
+    // Calculate signature
+    const kDate = await hmacSha256('AWS4' + R2_SECRET_ACCESS_KEY, dateShort);
+    const kRegion = await hmacSha256(kDate, region);
+    const kService = await hmacSha256(kRegion, service);
+    const kSigning = await hmacSha256(kService, 'aws4_request');
+    const signature = await hmacSha256(kSigning, stringToSign);
+    
+    return {
+      authorization: `AWS4-HMAC-SHA256 Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`,
+      date
+    };
+  };
+
+  // Helper functions for AWS Signature
+  const sha256 = async (message) => {
+    const encoder = new TextEncoder();
+    const data = encoder.encode(message);
+    const hash = await crypto.subtle.digest('SHA-256', data);
+    return Array.from(new Uint8Array(hash))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  };
+
+  const hmacSha256 = async (key, message) => {
+    const encoder = new TextEncoder();
+    const keyBuffer = encoder.encode(key);
+    const messageBuffer = encoder.encode(message);
+    
+    const cryptoKey = await crypto.subtle.importKey(
+      'raw', keyBuffer, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    );
+    
+    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
+    return Array.from(new Uint8Array(signature))
+      .map(b => b.toString(16).padStart(2, '0'))
+      .join('');
+  };
+
   // Direct Upload to R2 with progress tracking
   const handleImageUpload = async (file) => {
     try {
@@ -63,15 +150,13 @@ export default function ShopAdminPage() {
       // Generate unique file key
       const fileExtension = file.name.split('.').pop();
       const fileKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
+      const path = `/${BUCKET}/${fileKey}`;
       
-      // Create the signature (AWS Signature Version 4)
-      const region = 'auto';
-      const service = 's3';
-      const host = ENDPOINT.replace('https://', '');
-      const date = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
-      const dateShort = date.slice(0, 8);
+      // Get signature
+      const signatureHeaders = await getSignature('PUT', path, {
+        'Content-Type': file.type
+      });
       
-      // Prepare the request
       const xhr = new XMLHttpRequest();
       
       // Track upload progress
@@ -96,14 +181,12 @@ export default function ShopAdminPage() {
           reject(new Error("Upload failed due to network error"));
         });
         
-        xhr.open("PUT", `${ENDPOINT}/${BUCKET}/${fileKey}`);
+        xhr.open("PUT", `${ENDPOINT}${path}`);
         
         // Set required headers for R2/S3
         xhr.setRequestHeader("Content-Type", file.type);
-        xhr.setRequestHeader("x-amz-date", date);
-        xhr.setRequestHeader("Authorization", generateAuthorizationHeader(
-          'PUT', `/${BUCKET}/${fileKey}`, region, service, date, file.type
-        ));
+        xhr.setRequestHeader("x-amz-date", signatureHeaders.date);
+        xhr.setRequestHeader("Authorization", signatureHeaders.authorization);
         
         xhr.send(file);
       });
@@ -113,82 +196,6 @@ export default function ShopAdminPage() {
       setUploadError(error.message);
       throw new Error("Failed to upload file to storage");
     }
-  };
-
-  // Generate AWS Signature Version 4 Authorization header
-  const generateAuthorizationHeader = (method, canonicalUri, region, service, amzDate, contentType) => {
-    const algorithm = 'AWS4-HMAC-SHA256';
-    const dateShort = amzDate.slice(0, 8);
-    
-    // Create canonical request
-    const canonicalQueryString = '';
-    const canonicalHeaders = [
-      `host:${ENDPOINT.replace('https://', '')}`,
-      `x-amz-date:${amzDate}`,
-      contentType ? `content-type:${contentType}` : ''
-    ].filter(Boolean).join('\n') + '\n';
-    
-    const signedHeaders = 'host;x-amz-date' + (contentType ? ';content-type' : '');
-    
-    const payloadHash = 'UNSIGNED-PAYLOAD'; // For streaming uploads
-    
-    const canonicalRequest = [
-      method,
-      canonicalUri,
-      canonicalQueryString,
-      canonicalHeaders,
-      signedHeaders,
-      payloadHash
-    ].join('\n');
-    
-    // Create string to sign
-    const credentialScope = `${dateShort}/${region}/${service}/aws4_request`;
-    const stringToSign = [
-      algorithm,
-      amzDate,
-      credentialScope,
-      hashHex(canonicalRequest)
-    ].join('\n');
-    
-    // Calculate signature
-    const kDate = hmac(`AWS4${R2_SECRET_ACCESS_KEY}`, dateShort);
-    const kRegion = hmac(kDate, region);
-    const kService = hmac(kRegion, service);
-    const kSigning = hmac(kService, 'aws4_request');
-    const signature = hmacHex(kSigning, stringToSign);
-    
-    // Construct authorization header
-    return `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
-  };
-
-  // Helper functions for AWS Signature
-  const hashHex = (str) => {
-    const utf8 = new TextEncoder().encode(str);
-    return crypto.subtle.digest('SHA-256', utf8).then(buf => {
-      return Array.from(new Uint8Array(buf))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    });
-  };
-
-  const hmac = (key, data) => {
-    const encoder = new TextEncoder();
-    const keyBuf = encoder.encode(key);
-    const dataBuf = encoder.encode(data);
-    
-    return crypto.subtle.importKey(
-      'raw', keyBuf, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    ).then(cryptoKey => {
-      return crypto.subtle.sign('HMAC', cryptoKey, dataBuf);
-    }).then(buf => new Uint8Array(buf));
-  };
-
-  const hmacHex = (key, data) => {
-    return hmac(key, data).then(buf => {
-      return Array.from(new Uint8Array(buf))
-        .map(b => b.toString(16).padStart(2, '0'))
-        .join('');
-    });
   };
 
   const handleSubmit = async (e) => {
