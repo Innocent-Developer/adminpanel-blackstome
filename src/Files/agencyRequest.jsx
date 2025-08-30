@@ -20,7 +20,7 @@ const AgencyManager = () => {
     setFetching(true);
     try {
       const res = await axios.get(
-        "http://www.blackstonevoicechatroom.online/api/v1/get/all/agency"
+        "https://www.blackstonevoicechatroom.online/api/v1/get/all/agency" // Changed to HTTPS
       );
       setAgencies(res.data.data || []);
     } catch (err) {
@@ -76,7 +76,7 @@ const AgencyManager = () => {
 
     try {
       const res = await axios.post(
-        "http://www.blackstonevoicechatroom.online/api/v1/agency/create",
+        "https://www.blackstonevoicechatroom.online/api/v1/agency/create", // Changed to HTTPS
         submission
       );
       alert("Agency created successfully.");
