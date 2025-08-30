@@ -2,13 +2,6 @@ import { useState, useEffect, useRef } from "react";
 import { Trash2, Edit, X, Loader2, Plus } from "lucide-react";
 import { SHOP_API } from "../Apis/api";
 
-// R2 Configuration
-const R2_ACCESS_KEY_ID = "a687dd055c09de53fceaceeb64af5634";
-const R2_SECRET_ACCESS_KEY = "f7525ae3acf21b00132a10cef812129f986e1bbe7acaebab0db56b1dccbe788c";
-const BUCKET = "funchatparty";
-const ENDPOINT = "https://fff50cf33deaf058d417178eae241724.r2.cloudflarestorage.com";
-const PUBLIC_URL = "https://pub-369140d1ef684573bfafa4b4eef12a84.r2.dev";
-
 const categories = ["All", "Entrance", "Frame", "Bubblechat", "Theme"];
 
 export default function ShopAdminPage() {
@@ -54,19 +47,14 @@ export default function ShopAdminPage() {
       ? items
       : items.filter((item) => item.category === selectedCategory);
 
-  // Simplified R2 Upload using Presigned URL approach
+  // Upload file using the provided API endpoint
   const handleImageUpload = async (file) => {
     try {
       setUploadProgress(0);
       setUploadError(null);
       
-      // Generate unique file key
-      const fileExtension = file.name.split('.').pop();
-      const fileKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
-      
-      // Create a presigned URL for upload (this should be done on your backend)
-      // For demo purposes, we'll create it in the frontend (not secure for production)
-      const presignedUrl = await createPresignedUrl(fileKey, file.type);
+      const formData = new FormData();
+      formData.append("file", file);
       
       const xhr = new XMLHttpRequest();
       
@@ -81,8 +69,18 @@ export default function ShopAdminPage() {
       return new Promise((resolve, reject) => {
         xhr.addEventListener("load", () => {
           if (xhr.status >= 200 && xhr.status < 300) {
-            const publicUrl = `${PUBLIC_URL}/${fileKey}`;
-            resolve(publicUrl);
+            try {
+              const response = JSON.parse(xhr.responseText);
+              // Assuming the API returns the file URL in a 'fileUrl' field
+              const fileUrl = response.fileUrl || response.url || response.location;
+              if (fileUrl) {
+                resolve(fileUrl);
+              } else {
+                reject(new Error("No file URL returned from server"));
+              }
+            } catch (error) {
+              reject(new Error("Failed to parse server response"));
+            }
           } else {
             reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
           }
@@ -92,9 +90,8 @@ export default function ShopAdminPage() {
           reject(new Error("Upload failed due to network error"));
         });
         
-        xhr.open("PUT", presignedUrl);
-        xhr.setRequestHeader("Content-Type", file.type);
-        xhr.send(file);
+        xhr.open("POST", "https://www.blackstonavoicechatroom.online/upload/file");
+        xhr.send(formData);
       });
       
     } catch (error) {
@@ -102,73 +99,6 @@ export default function ShopAdminPage() {
       setUploadError(error.message);
       throw new Error("Failed to upload file to storage");
     }
-  };
-
-  // Create a presigned URL for R2 upload (should be done on backend in production)
-  const createPresignedUrl = async (fileKey, contentType) => {
-    // In a production app, this should call your backend API
-    // For demo purposes, we'll generate it in the frontend
-    
-    const region = 'auto';
-    const service = 's3';
-    const date = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
-    const dateShort = date.slice(0, 8);
-    const credentialScope = `${dateShort}/${region}/${service}/aws4_request`;
-    
-    // Generate the signature
-    const canonicalRequest = [
-      'PUT',
-      `/${BUCKET}/${fileKey}`,
-      '',
-      `host:${ENDPOINT.replace('https://', '')}`,
-      `x-amz-date:${date}`,
-      '',
-      'host;x-amz-date',
-      'UNSIGNED-PAYLOAD'
-    ].join('\n');
-    
-    const stringToSign = [
-      'AWS4-HMAC-SHA256',
-      date,
-      credentialScope,
-      await sha256(canonicalRequest)
-    ].join('\n');
-    
-    const signingKey = await getSignatureKey(R2_SECRET_ACCESS_KEY, dateShort, region, service);
-    const signature = await hmacSha256(signingKey, stringToSign);
-    
-    return `${ENDPOINT}/${BUCKET}/${fileKey}?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=${encodeURIComponent(R2_ACCESS_KEY_ID + '/' + credentialScope)}&X-Amz-Date=${date}&X-Amz-Expires=900&X-Amz-SignedHeaders=host%3Bx-amz-date&X-Amz-Signature=${signature}`;
-  };
-
-  // Helper functions for AWS Signature
-  const sha256 = async (message) => {
-    const encoder = new TextEncoder();
-    const data = encoder.encode(message);
-    const hash = await crypto.subtle.digest('SHA-256', data);
-    return Array.from(new Uint8Array(hash))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  };
-
-  const hmacSha256 = async (key, message) => {
-    const encoder = new TextEncoder();
-    const messageBuffer = encoder.encode(message);
-    
-    const cryptoKey = await crypto.subtle.importKey(
-      'raw', key, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
-    );
-    
-    const signature = await crypto.subtle.sign('HMAC', cryptoKey, messageBuffer);
-    return Array.from(new Uint8Array(signature))
-      .map(b => b.toString(16).padStart(2, '0'))
-      .join('');
-  };
-
-  const getSignatureKey = async (key, dateStamp, regionName, serviceName) => {
-    const kDate = await hmacSha256(new TextEncoder().encode('AWS4' + key), dateStamp);
-    const kRegion = await hmacSha256(kDate, regionName);
-    const kService = await hmacSha256(kRegion, serviceName);
-    return await hmacSha256(kService, 'aws4_request');
   };
 
   const handleSubmit = async (e) => {
