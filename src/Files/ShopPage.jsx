@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { Trash2, Edit, X, Loader2, Plus } from "lucide-react";
 import { SHOP_API } from "../Apis/api";
 
-// R2 Configuration (Replace with your actual values)
+// R2 Configuration (Using your actual values)
 const R2_ACCESS_KEY_ID = "a687dd055c09de53fceaceeb64af5634";
 const R2_SECRET_ACCESS_KEY = "f7525ae3acf21b00132a10cef812129f986e1bbe7acaebab0db56b1dccbe788c";
 const BUCKET = "funchatparty";
@@ -64,19 +64,14 @@ export default function ShopAdminPage() {
       const fileExtension = file.name.split('.').pop();
       const fileKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
       
-      // Create form data for R2 upload
-      const formData = new FormData();
-      formData.append("key", fileKey);
-      formData.append("bucket", BUCKET);
-      formData.append("Content-Type", file.type);
-      formData.append("file", file);
-
-      // Create signature (in a real app, this should be done via a backend for security)
-      // For demo purposes only - this is not secure for production
-      const timestamp = Date.now().toString();
-      const signatureData = `${R2_ACCESS_KEY_ID}:${R2_SECRET_ACCESS_KEY}:${timestamp}`;
-      const signature = btoa(signatureData);
+      // Create the signature (AWS Signature Version 4)
+      const region = 'auto';
+      const service = 's3';
+      const host = ENDPOINT.replace('https://', '');
+      const date = new Date().toISOString().replace(/[:-]|\.\d{3}/g, '');
+      const dateShort = date.slice(0, 8);
       
+      // Prepare the request
       const xhr = new XMLHttpRequest();
       
       // Track upload progress
@@ -93,7 +88,7 @@ export default function ShopAdminPage() {
             const publicUrl = `${PUBLIC_URL}/${fileKey}`;
             resolve(publicUrl);
           } else {
-            reject(new Error(`Upload failed with status ${xhr.status}`));
+            reject(new Error(`Upload failed with status ${xhr.status}: ${xhr.statusText}`));
           }
         });
         
@@ -102,9 +97,15 @@ export default function ShopAdminPage() {
         });
         
         xhr.open("PUT", `${ENDPOINT}/${BUCKET}/${fileKey}`);
-        xhr.setRequestHeader("Authorization", `Bearer ${signature}`);
-        xhr.setRequestHeader("x-amz-date", timestamp);
-        xhr.send(formData);
+        
+        // Set required headers for R2/S3
+        xhr.setRequestHeader("Content-Type", file.type);
+        xhr.setRequestHeader("x-amz-date", date);
+        xhr.setRequestHeader("Authorization", generateAuthorizationHeader(
+          'PUT', `/${BUCKET}/${fileKey}`, region, service, date, file.type
+        ));
+        
+        xhr.send(file);
       });
       
     } catch (error) {
@@ -112,6 +113,82 @@ export default function ShopAdminPage() {
       setUploadError(error.message);
       throw new Error("Failed to upload file to storage");
     }
+  };
+
+  // Generate AWS Signature Version 4 Authorization header
+  const generateAuthorizationHeader = (method, canonicalUri, region, service, amzDate, contentType) => {
+    const algorithm = 'AWS4-HMAC-SHA256';
+    const dateShort = amzDate.slice(0, 8);
+    
+    // Create canonical request
+    const canonicalQueryString = '';
+    const canonicalHeaders = [
+      `host:${ENDPOINT.replace('https://', '')}`,
+      `x-amz-date:${amzDate}`,
+      contentType ? `content-type:${contentType}` : ''
+    ].filter(Boolean).join('\n') + '\n';
+    
+    const signedHeaders = 'host;x-amz-date' + (contentType ? ';content-type' : '');
+    
+    const payloadHash = 'UNSIGNED-PAYLOAD'; // For streaming uploads
+    
+    const canonicalRequest = [
+      method,
+      canonicalUri,
+      canonicalQueryString,
+      canonicalHeaders,
+      signedHeaders,
+      payloadHash
+    ].join('\n');
+    
+    // Create string to sign
+    const credentialScope = `${dateShort}/${region}/${service}/aws4_request`;
+    const stringToSign = [
+      algorithm,
+      amzDate,
+      credentialScope,
+      hashHex(canonicalRequest)
+    ].join('\n');
+    
+    // Calculate signature
+    const kDate = hmac(`AWS4${R2_SECRET_ACCESS_KEY}`, dateShort);
+    const kRegion = hmac(kDate, region);
+    const kService = hmac(kRegion, service);
+    const kSigning = hmac(kService, 'aws4_request');
+    const signature = hmacHex(kSigning, stringToSign);
+    
+    // Construct authorization header
+    return `${algorithm} Credential=${R2_ACCESS_KEY_ID}/${credentialScope}, SignedHeaders=${signedHeaders}, Signature=${signature}`;
+  };
+
+  // Helper functions for AWS Signature
+  const hashHex = (str) => {
+    const utf8 = new TextEncoder().encode(str);
+    return crypto.subtle.digest('SHA-256', utf8).then(buf => {
+      return Array.from(new Uint8Array(buf))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    });
+  };
+
+  const hmac = (key, data) => {
+    const encoder = new TextEncoder();
+    const keyBuf = encoder.encode(key);
+    const dataBuf = encoder.encode(data);
+    
+    return crypto.subtle.importKey(
+      'raw', keyBuf, { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']
+    ).then(cryptoKey => {
+      return crypto.subtle.sign('HMAC', cryptoKey, dataBuf);
+    }).then(buf => new Uint8Array(buf));
+  };
+
+  const hmacHex = (key, data) => {
+    return hmac(key, data).then(buf => {
+      return Array.from(new Uint8Array(buf))
+        .map(b => b.toString(16).padStart(2, '0'))
+        .join('');
+    });
   };
 
   const handleSubmit = async (e) => {
