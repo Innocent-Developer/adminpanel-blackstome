@@ -2,12 +2,11 @@ import { useState, useEffect, useRef } from "react";
 import { Trash2, Edit, X, Loader2, Plus } from "lucide-react";
 import { SHOP_API } from "../Apis/api";
 
-// R2 Config (⚠️ Put real values here – not safe in production)
-const R2_ACCESS_KEY_ID = "b358cfc0eb0a47297b57a0355a85cf12";
-const R2_SECRET_ACCESS_KEY = "f2960a0b0ffebc67cb57297f38bb5584d097a8381095ba7ec6a7400fb445385b";
+// R2 Configuration (Replace with your actual values)
+const R2_ACCESS_KEY_ID = "a687dd055c09de53fceaceeb64af5634";
+const R2_SECRET_ACCESS_KEY = "f7525ae3acf21b00132a10cef812129f986e1bbe7acaebab0db56b1dccbe788c";
 const BUCKET = "funchatparty";
 const ENDPOINT = "https://fff50cf33deaf058d417178eae241724.r2.cloudflarestorage.com";
-// Replace with your enabled Public Development URL
 const PUBLIC_URL = "https://pub-369140d1ef684573bfafa4b4eef12a84.r2.dev";
 
 const categories = ["All", "Entrance", "Frame", "Bubblechat", "Theme"];
@@ -27,6 +26,7 @@ export default function ShopAdminPage() {
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [uploadError, setUploadError] = useState(null);
 
   const canvasRef = useRef(null);
   const playerRef = useRef(null);
@@ -54,55 +54,75 @@ export default function ShopAdminPage() {
       ? items
       : items.filter((item) => item.category === selectedCategory);
 
-  // ⬇️ Direct Upload to R2 with progress tracking
+  // Direct Upload to R2 with progress tracking
   const handleImageUpload = async (file) => {
     try {
       setUploadProgress(0);
+      setUploadError(null);
       
-      // Import AWS SDK dynamically to reduce bundle size
-      const { S3Client, PutObjectCommand } = await import("@aws-sdk/client-s3");
-      
-      const s3 = new S3Client({
-        region: "auto",
-        endpoint: ENDPOINT,
-        credentials: {
-          accessKeyId: R2_ACCESS_KEY_ID,
-          secretAccessKey: R2_SECRET_ACCESS_KEY,
-        },
-      });
-
       // Generate unique file key
       const fileExtension = file.name.split('.').pop();
       const fileKey = `${Date.now()}-${Math.random().toString(36).substring(2, 9)}.${fileExtension}`;
-
-      const command = new PutObjectCommand({
-        Bucket: BUCKET,
-        Key: fileKey,
-        Body: file,
-        ContentType: file.type,
-        ACL: 'public-read', // Ensure the file is publicly accessible
-      });
-
-      await s3.send(command);
       
-      // Return the public URL
-      return `${PUBLIC_URL}/${fileKey}`;
+      // Create form data for R2 upload
+      const formData = new FormData();
+      formData.append("key", fileKey);
+      formData.append("bucket", BUCKET);
+      formData.append("Content-Type", file.type);
+      formData.append("file", file);
+
+      // Create signature (in a real app, this should be done via a backend for security)
+      // For demo purposes only - this is not secure for production
+      const timestamp = Date.now().toString();
+      const signatureData = `${R2_ACCESS_KEY_ID}:${R2_SECRET_ACCESS_KEY}:${timestamp}`;
+      const signature = btoa(signatureData);
+      
+      const xhr = new XMLHttpRequest();
+      
+      // Track upload progress
+      xhr.upload.addEventListener("progress", (event) => {
+        if (event.lengthComputable) {
+          const percentComplete = (event.loaded / event.total) * 100;
+          setUploadProgress(percentComplete);
+        }
+      });
+      
+      return new Promise((resolve, reject) => {
+        xhr.addEventListener("load", () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            const publicUrl = `${PUBLIC_URL}/${fileKey}`;
+            resolve(publicUrl);
+          } else {
+            reject(new Error(`Upload failed with status ${xhr.status}`));
+          }
+        });
+        
+        xhr.addEventListener("error", () => {
+          reject(new Error("Upload failed due to network error"));
+        });
+        
+        xhr.open("PUT", `${ENDPOINT}/${BUCKET}/${fileKey}`);
+        xhr.setRequestHeader("Authorization", `Bearer ${signature}`);
+        xhr.setRequestHeader("x-amz-date", timestamp);
+        xhr.send(formData);
+      });
+      
     } catch (error) {
       console.error("Upload failed:", error);
+      setUploadError(error.message);
       throw new Error("Failed to upload file to storage");
-    } finally {
-      setUploadProgress(100);
-      setTimeout(() => setUploadProgress(0), 1000);
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
+    setUploadError(null);
+    
     try {
-      let fileUrl = previewUrl;
+      let fileUrl = form.itemPic;
 
-      // If there's a new file to upload
+      // If there's a new file to upload (and it's not already a URL string)
       if (form.itemPic && typeof form.itemPic !== 'string') {
         fileUrl = await handleImageUpload(form.itemPic);
       }
@@ -148,6 +168,7 @@ export default function ShopAdminPage() {
       alert(err.message);
     } finally {
       setLoading(false);
+      setUploadProgress(0);
     }
   };
 
@@ -193,8 +214,9 @@ export default function ShopAdminPage() {
     if (!file) return setPreviewUrl(null);
     
     setForm({ ...form, itemPic: file });
+    setUploadError(null);
 
-    const isSVGA = file.name?.endsWith(".svga");
+    const isSVGA = file.name?.toLowerCase().endsWith(".svga");
 
     const reader = new FileReader();
     reader.onload = () => {
@@ -218,13 +240,18 @@ export default function ShopAdminPage() {
   const playSVGA = async (arrayBuffer) => {
     if (!canvasRef.current || !window.SVGA) return;
 
-    const playerInstance = new window.SVGA.PlayerLite(canvasRef.current);
-    const parser = new window.SVGA.ParserLite();
-    const videoItem = await parser.do(arrayBuffer);
+    try {
+      const playerInstance = new window.SVGA.PlayerLite(canvasRef.current);
+      const parser = new window.SVGA.ParserLite();
+      const videoItem = await parser.do(arrayBuffer);
 
-    playerInstance.setVideoItem(videoItem);
-    playerInstance.startAnimation();
-    playerRef.current = playerInstance;
+      playerInstance.setVideoItem(videoItem);
+      playerInstance.startAnimation();
+      playerRef.current = playerInstance;
+    } catch (error) {
+      console.error("Error playing SVGA:", error);
+      setUploadError("Failed to preview SVGA file");
+    }
   };
 
   return (
@@ -244,6 +271,7 @@ export default function ShopAdminPage() {
             setIsEditMode(false);
             setEditId(null);
             setShowModal(true);
+            setUploadError(null);
             if (playerRef.current?.clear) playerRef.current.clear();
           }}
           className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
@@ -393,9 +421,12 @@ export default function ShopAdminPage() {
                     <p className="text-xs text-gray-400 mt-1">Uploading: {Math.round(uploadProgress)}%</p>
                   </div>
                 )}
+                {uploadError && (
+                  <p className="text-red-400 text-xs mt-1">{uploadError}</p>
+                )}
               </div>
               
-              {form.itemPic?.name?.endsWith(".svga") ? (
+              {form.itemPic && form.itemPic.name && form.itemPic.name.toLowerCase().endsWith(".svga") ? (
                 <canvas
                   ref={canvasRef}
                   width="200"
@@ -418,7 +449,7 @@ export default function ShopAdminPage() {
               
               <button
                 type="submit"
-                disabled={loading || uploadProgress > 0}
+                disabled={loading || (uploadProgress > 0 && uploadProgress < 100)}
                 className="w-full bg-gradient-to-r from-purple-500 to-blue-600 py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
