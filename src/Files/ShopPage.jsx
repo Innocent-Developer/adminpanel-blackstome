@@ -4,7 +4,7 @@ import { Trash2, Edit, X, Loader2, Plus } from "lucide-react";
 // API endpoints
 const BASE_URL= "https://www.blackstonevoicechatroom.online";
 const SHOP_API = {
-CREATE: `${BASE_URL}/shop/create`,
+  CREATE: `${BASE_URL}/shop/create`,
   ITEMS: `${BASE_URL}/shop/items`,
   UPDATE: `${BASE_URL}/shop/update/item`,
   DELETE: `${BASE_URL}/shop/delete/item`,
@@ -20,15 +20,19 @@ export default function ShopAdminPage() {
     itemPrices: { "7day": "", "14day": "", "30day": "" },
     itemPic: null,
     category: "Entrance",
+    image: null, // New field for image upload
   });
   const [previewUrl, setPreviewUrl] = useState(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null); // New state for image preview
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
+  const [imageUploadProgress, setImageUploadProgress] = useState(0); // New state for image upload progress
   const [uploadError, setUploadError] = useState(null);
+  const [imageUploadError, setImageUploadError] = useState(null); // New state for image upload error
 
   const canvasRef = useRef(null);
   const playerRef = useRef(null);
@@ -56,11 +60,11 @@ export default function ShopAdminPage() {
       ? items
       : items.filter((item) => item.category === selectedCategory);
 
-  // Upload file using the API endpoint from your screenshot
-  const handleImageUpload = async (file) => {
+  // Generic file upload function
+  const handleFileUpload = async (file, progressSetter, errorSetter) => {
     try {
-      setUploadProgress(0);
-      setUploadError(null);
+      progressSetter(0);
+      errorSetter(null);
       
       const formData = new FormData();
       formData.append("file", file);
@@ -71,7 +75,7 @@ export default function ShopAdminPage() {
       xhr.upload.addEventListener("progress", (event) => {
         if (event.lengthComputable) {
           const percentComplete = (event.loaded / event.total) * 100;
-          setUploadProgress(percentComplete);
+          progressSetter(percentComplete);
         }
       });
       
@@ -103,28 +107,46 @@ export default function ShopAdminPage() {
       
     } catch (error) {
       console.error("Upload failed:", error);
-      setUploadError(error.message);
+      errorSetter(error.message);
       throw error;
     }
+  };
+
+  // Upload itemPic file
+  const handleImageUpload = async (file) => {
+    return handleFileUpload(file, setUploadProgress, setUploadError);
+  };
+
+  // Upload image file (new field)
+  const handleAdditionalImageUpload = async (file) => {
+    return handleFileUpload(file, setImageUploadProgress, setImageUploadError);
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
     setUploadError(null);
+    setImageUploadError(null);
     
     try {
       let fileUrl = form.itemPic;
+      let imageUrl = form.image;
 
-      // If there's a new file to upload (and it's not already a URL string)
+      // If there's a new itemPic file to upload (and it's not already a URL string)
       if (form.itemPic && typeof form.itemPic !== 'string') {
         fileUrl = await handleImageUpload(form.itemPic);
+      }
+
+      // If there's a new image file to upload (and it's not already a URL string)
+      if (form.image && typeof form.image !== 'string') {
+        imageUrl = await handleAdditionalImageUpload(form.image);
       }
 
       const payload = {
         itemName: form.itemName,
         itemPic: fileUrl,
         category: form.category,
+        image: imageUrl, // Include the image URL in the payload
         itemPrices: {
           "7day": Number(form.itemPrices["7day"]),
           "14day": Number(form.itemPrices["14day"]),
@@ -150,9 +172,11 @@ export default function ShopAdminPage() {
         itemName: "",
         itemPrices: { "7day": "", "14day": "", "30day": "" },
         itemPic: null,
+        image: null,
         category: "Entrance",
       });
       setPreviewUrl(null);
+      setImagePreviewUrl(null);
       setIsEditMode(false);
       setShowModal(false);
       setEditId(null);
@@ -160,11 +184,13 @@ export default function ShopAdminPage() {
 
       fetchItems();
     } catch (err) {
-      setUploadError(err.message);
-      alert(err.message);
+      const errorMessage = err.message || "An error occurred";
+      setUploadError(errorMessage);
+      alert(errorMessage);
     } finally {
       setLoading(false);
       setUploadProgress(0);
+      setImageUploadProgress(0);
     }
   };
 
@@ -179,9 +205,11 @@ export default function ShopAdminPage() {
         "30day": item.itemPrices?.["30day"] || "",
       },
       itemPic: item.itemPic,
+      image: item.image || null,
       category: item.category || "Entrance",
     });
     setPreviewUrl(item.itemPic || null);
+    setImagePreviewUrl(item.image || null);
     setShowModal(true);
     if (playerRef.current?.clear) playerRef.current.clear();
   };
@@ -204,28 +232,44 @@ export default function ShopAdminPage() {
     }
   };
 
-  const handleFileChange = (e) => {
+  const handleFileChange = (e, isImageField = false) => {
     const file = e.target.files[0];
-    if (!file) return setPreviewUrl(null);
+    if (!file) {
+      if (isImageField) {
+        setImagePreviewUrl(null);
+        setForm({ ...form, image: null });
+      } else {
+        setPreviewUrl(null);
+        setForm({ ...form, itemPic: null });
+      }
+      return;
+    }
     
-    setForm({ ...form, itemPic: file });
-    setUploadError(null);
+    if (isImageField) {
+      setForm({ ...form, image: file });
+      setImageUploadError(null);
+    } else {
+      setForm({ ...form, itemPic: file });
+      setUploadError(null);
+    }
 
     const isSVGA = file.name?.toLowerCase().endsWith(".svga");
 
     const reader = new FileReader();
     reader.onload = () => {
-      if (isSVGA) {
+      if (isSVGA && !isImageField) {
         const arrayBuffer = reader.result;
         playSVGA(arrayBuffer);
         setPreviewUrl(null);
+      } else if (isImageField) {
+        setImagePreviewUrl(reader.result);
       } else {
         setPreviewUrl(reader.result);
         if (playerRef.current?.clear) playerRef.current.clear();
       }
     };
 
-    if (isSVGA) {
+    if (isSVGA && !isImageField) {
       reader.readAsArrayBuffer(file);
     } else {
       reader.readAsDataURL(file);
@@ -260,13 +304,16 @@ export default function ShopAdminPage() {
               itemName: "",
               itemPrices: { "7day": "", "14day": "", "30day": "" },
               itemPic: null,
+              image: null,
               category: "Entrance",
             });
             setPreviewUrl(null);
+            setImagePreviewUrl(null);
             setIsEditMode(false);
             setEditId(null);
             setShowModal(true);
             setUploadError(null);
+            setImageUploadError(null);
             if (playerRef.current?.clear) playerRef.current.clear();
           }}
           className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
@@ -308,6 +355,16 @@ export default function ShopAdminPage() {
                 e.target.src = "https://via.placeholder.com/200x200/1a1a2e/ffffff?text=Image+Not+Found";
               }}
             />
+            {item.image && (
+              <img
+                src={item.image}
+                alt={`${item.itemName} additional`}
+                className="w-full h-48 object-cover rounded-lg mb-3"
+                onError={(e) => {
+                  e.target.src = "https://via.placeholder.com/200x200/1a1a2e/ffffff?text=Image+Not+Found";
+                }}
+              />
+            )}
             <div>
               <h4 className="text-lg font-semibold mb-1">{item.itemName}</h4>
               <p className="text-sm text-gray-400">
@@ -402,6 +459,7 @@ export default function ShopAdminPage() {
                   ))}
               </select>
               
+              {/* Item Image/File Field */}
               <div>
                 <label className="block text-sm font-medium text-gray-300 mb-1">
                   Item Image/File
@@ -409,7 +467,7 @@ export default function ShopAdminPage() {
                 <input
                   type="file"
                   accept=".svga,image/*"
-                  onChange={handleFileChange}
+                  onChange={(e) => handleFileChange(e, false)}
                   className="w-full text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
                 />
                 {uploadProgress > 0 && uploadProgress < 100 && (
@@ -428,30 +486,89 @@ export default function ShopAdminPage() {
                 )}
               </div>
               
-              {form.itemPic && form.itemPic.name && form.itemPic.name.toLowerCase().endsWith(".svga") ? (
-                <canvas
-                  ref={canvasRef}
-                  width="200"
-                  height="200"
-                  className="rounded-md border border-gray-600 mt-2"
+              {/* Additional Image Field */}
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Additional Image
+                </label>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileChange(e, true)}
+                  className="w-full text-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-purple-600 file:text-white hover:file:bg-purple-700"
                 />
-              ) : previewUrl ? (
-                <img
-                  src={previewUrl}
-                  alt="Preview"
-                  className="w-full h-40 object-cover rounded mt-2"
-                />
-              ) : form.itemPic && typeof form.itemPic === 'string' ? (
-                <img
-                  src={form.itemPic}
-                  alt="Current"
-                  className="w-full h-40 object-cover rounded mt-2"
-                />
-              ) : null}
+                {imageUploadProgress > 0 && imageUploadProgress < 100 && (
+                  <div className="mt-2">
+                    <div className="w-full bg-gray-700 rounded-full h-2.5">
+                      <div 
+                        className="bg-blue-600 h-2.5 rounded-full" 
+                        style={{ width: `${imageUploadProgress}%` }}
+                      ></div>
+                    </div>
+                    <p className="text-xs text-gray-400 mt-1">Uploading: {Math.round(imageUploadProgress)}%</p>
+                  </div>
+                )}
+                {imageUploadError && (
+                  <p className="text-red-400 text-xs mt-1">{imageUploadError}</p>
+                )}
+              </div>
+              
+              {/* Previews */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {form.itemPic && form.itemPic.name && form.itemPic.name.toLowerCase().endsWith(".svga") ? (
+                  <div>
+                    <p className="text-sm text-gray-300 mb-1">Item Preview:</p>
+                    <canvas
+                      ref={canvasRef}
+                      width="200"
+                      height="200"
+                      className="rounded-md border border-gray-600 w-full"
+                    />
+                  </div>
+                ) : previewUrl ? (
+                  <div>
+                    <p className="text-sm text-gray-300 mb-1">Item Preview:</p>
+                    <img
+                      src={previewUrl}
+                      alt="Preview"
+                      className="w-full h-40 object-cover rounded"
+                    />
+                  </div>
+                ) : form.itemPic && typeof form.itemPic === 'string' ? (
+                  <div>
+                    <p className="text-sm text-gray-300 mb-1">Current Item:</p>
+                    <img
+                      src={form.itemPic}
+                      alt="Current"
+                      className="w-full h-40 object-cover rounded"
+                    />
+                  </div>
+                ) : null}
+                
+                {imagePreviewUrl ? (
+                  <div>
+                    <p className="text-sm text-gray-300 mb-1">Additional Image Preview:</p>
+                    <img
+                      src={imagePreviewUrl}
+                      alt="Additional Preview"
+                      className="w-full h-40 object-cover rounded"
+                    />
+                  </div>
+                ) : form.image && typeof form.image === 'string' ? (
+                  <div>
+                    <p className="text-sm text-gray-300 mb-1">Current Additional Image:</p>
+                    <img
+                      src={form.image}
+                      alt="Current Additional"
+                      className="w-full h-40 object-cover rounded"
+                    />
+                  </div>
+                ) : null}
+              </div>
               
               <button
                 type="submit"
-                disabled={loading || (uploadProgress > 0 && uploadProgress < 100)}
+                disabled={loading || (uploadProgress > 0 && uploadProgress < 100) || (imageUploadProgress > 0 && imageUploadProgress < 100)}
                 className="w-full bg-gradient-to-r from-purple-500 to-blue-600 py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? (
