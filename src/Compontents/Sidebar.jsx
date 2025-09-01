@@ -32,6 +32,7 @@ const menuItems = [
   { label: "Shop", icon: Gift },
   { label: "Gifts", icon: Gift },
   { label: "Room", icon: Mic },
+   { label: "vvips", icon: Mic },
   { label: "Agency System", icon: UserCheck },
   { label: "Posts", icon: Image },
   { label: "App Settings", icon: Settings },

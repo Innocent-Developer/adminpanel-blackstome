@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Edit, X, Loader2, Plus, Gift, Crown } from "lucide-react";
+import { Trash2, Edit, X, Loader2, Plus, Crown } from "lucide-react";
 
 // API endpoints
 const BASE_URL = "https://www.blackstonevoicechatroom.online";
@@ -46,7 +46,8 @@ export default function Vvips() {
     try {
       const res = await fetch(VIP_API.ITEMS);
       const data = await res.json();
-      setItems(Array.isArray(data) ? data : []);
+      // Check if the response has vvpiItems array
+      setItems(Array.isArray(data.vvpiItems) ? data.vvpiItems : []);
     } catch (err) {
       console.error("Failed to fetch VIP items:", err);
       setItems([]);
