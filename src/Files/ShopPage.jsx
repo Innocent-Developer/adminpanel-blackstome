@@ -1,14 +1,15 @@
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Edit, X, Loader2, Plus } from "lucide-react";
+import { Trash2, Edit, X, Loader2, Plus, Gift } from "lucide-react";
 
 // API endpoints
-const BASE_URL= "https://www.blackstonevoicechatroom.online";
+const BASE_URL = "https://www.blackstonevoicechatroom.online";
 const SHOP_API = {
   CREATE: `${BASE_URL}/shop/create`,
   ITEMS: `${BASE_URL}/shop/items`,
   UPDATE: `${BASE_URL}/shop/update/item`,
   DELETE: `${BASE_URL}/shop/delete/item`,
-  UPLOAD: `${BASE_URL}/upload/file`, // The upload endpoint from your screenshot
+  UPLOAD: `${BASE_URL}/upload/file`,
+  ADMIN_SEND_GIFT: `${BASE_URL}/admin/send/item`,
 };
 
 const categories = ["All", "Entrance", "Frame", "Bubblechat", "Theme"];
@@ -19,20 +20,28 @@ export default function ShopAdminPage() {
     itemName: "",
     itemPrices: { "7day": "", "14day": "", "30day": "" },
     itemPic: null,
+    image: null,
     category: "Entrance",
-    image: null, // New field for image upload
   });
   const [previewUrl, setPreviewUrl] = useState(null);
-  const [imagePreviewUrl, setImagePreviewUrl] = useState(null); // New state for image preview
+  const [imagePreviewUrl, setImagePreviewUrl] = useState(null);
   const [isEditMode, setIsEditMode] = useState(false);
   const [editId, setEditId] = useState(null);
   const [showModal, setShowModal] = useState(false);
+  const [showGiftModal, setShowGiftModal] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [loading, setLoading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
-  const [imageUploadProgress, setImageUploadProgress] = useState(0); // New state for image upload progress
+  const [imageUploadProgress, setImageUploadProgress] = useState(0);
   const [uploadError, setUploadError] = useState(null);
-  const [imageUploadError, setImageUploadError] = useState(null); // New state for image upload error
+  const [imageUploadError, setImageUploadError] = useState(null);
+  const [giftForm, setGiftForm] = useState({
+    itemCode: "",
+    ui_id: "",
+    durication: "7day"
+  });
+  const [giftLoading, setGiftLoading] = useState(false);
+  const [giftMessage, setGiftMessage] = useState("");
 
   const canvasRef = useRef(null);
   const playerRef = useRef(null);
@@ -146,7 +155,7 @@ export default function ShopAdminPage() {
         itemName: form.itemName,
         itemPic: fileUrl,
         category: form.category,
-        image: imageUrl, // Include the image URL in the payload
+        image: imageUrl,
         itemPrices: {
           "7day": Number(form.itemPrices["7day"]),
           "14day": Number(form.itemPrices["14day"]),
@@ -168,6 +177,7 @@ export default function ShopAdminPage() {
         throw new Error(errorData.message || "Failed to submit item");
       }
 
+      // Reset form
       setForm({
         itemName: "",
         itemPrices: { "7day": "", "14day": "", "30day": "" },
@@ -182,6 +192,7 @@ export default function ShopAdminPage() {
       setEditId(null);
       if (playerRef.current?.clear) playerRef.current.clear();
 
+      // Refresh items list
       fetchItems();
     } catch (err) {
       const errorMessage = err.message || "An error occurred";
@@ -191,6 +202,43 @@ export default function ShopAdminPage() {
       setLoading(false);
       setUploadProgress(0);
       setImageUploadProgress(0);
+    }
+  };
+
+  const handleSendGift = async (e) => {
+    e.preventDefault();
+    setGiftLoading(true);
+    setGiftMessage("");
+
+    try {
+      const res = await fetch(SHOP_API.ADMIN_SEND_GIFT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(giftForm),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        throw new Error(data.message || "Failed to send gift");
+      }
+
+      setGiftMessage(data.message || "Gift sent successfully!");
+      setGiftForm({
+        itemCode: "",
+        ui_id: "",
+        durication: "7day"
+      });
+      
+      // Auto-close modal after 2 seconds
+      setTimeout(() => {
+        setShowGiftModal(false);
+        setGiftMessage("");
+      }, 2000);
+    } catch (err) {
+      setGiftMessage(err.message || "An error occurred while sending the gift");
+    } finally {
+      setGiftLoading(false);
     }
   };
 
@@ -298,29 +346,38 @@ export default function ShopAdminPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-6 gap-4">
         <h2 className="text-2xl md:text-3xl font-bold">🛒 Shop Admin</h2>
-        <button
-          onClick={() => {
-            setForm({
-              itemName: "",
-              itemPrices: { "7day": "", "14day": "", "30day": "" },
-              itemPic: null,
-              image: null,
-              category: "Entrance",
-            });
-            setPreviewUrl(null);
-            setImagePreviewUrl(null);
-            setIsEditMode(false);
-            setEditId(null);
-            setShowModal(true);
-            setUploadError(null);
-            setImageUploadError(null);
-            if (playerRef.current?.clear) playerRef.current.clear();
-          }}
-          className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
-        >
-          <Plus size={18} />
-          Create Item
-        </button>
+        <div className="flex gap-3">
+          <button
+            onClick={() => setShowGiftModal(true)}
+            className="flex items-center gap-2 bg-gradient-to-r from-green-500 to-teal-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+          >
+            <Gift size={18} />
+            Send Gift
+          </button>
+          <button
+            onClick={() => {
+              setForm({
+                itemName: "",
+                itemPrices: { "7day": "", "14day": "", "30day": "" },
+                itemPic: null,
+                image: null,
+                category: "Entrance",
+              });
+              setPreviewUrl(null);
+              setImagePreviewUrl(null);
+              setIsEditMode(false);
+              setEditId(null);
+              setShowModal(true);
+              setUploadError(null);
+              setImageUploadError(null);
+              if (playerRef.current?.clear) playerRef.current.clear();
+            }}
+            className="flex items-center gap-2 bg-gradient-to-r from-blue-500 to-purple-600 text-white px-4 py-2 rounded-lg hover:opacity-90 transition"
+          >
+            <Plus size={18} />
+            Create Item
+          </button>
+        </div>
       </div>
 
       {/* Category Filter */}
@@ -373,6 +430,9 @@ export default function ShopAdminPage() {
                 {item.itemPrices?.["30day"]}
               </p>
               <p className="text-sm text-gray-500">📦 {item.category}</p>
+              {item.itemCode && (
+                <p className="text-sm text-gray-400">🔑 Code: {item.itemCode}</p>
+              )}
               <div className="flex gap-3 mt-4">
                 <button
                   onClick={() => handleEdit(item)}
@@ -580,6 +640,95 @@ export default function ShopAdminPage() {
                   "Update Item"
                 ) : (
                   "Create Item"
+                )}
+              </button>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Send Gift Modal */}
+      {showGiftModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+          <div className="bg-[#121225] p-6 rounded-2xl w-full max-w-md relative border border-green-800">
+            <button
+              onClick={() => {
+                setShowGiftModal(false);
+                setGiftMessage("");
+              }}
+              className="absolute top-4 right-4 text-white hover:text-red-400"
+            >
+              <X size={24} />
+            </button>
+            <h2 className="text-xl font-bold mb-4 text-center text-green-400">
+              🎁 Send Gift to User
+            </h2>
+            <form onSubmit={handleSendGift} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Item Code
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter item code"
+                  value={giftForm.itemCode}
+                  onChange={(e) => setGiftForm({ ...giftForm, itemCode: e.target.value })}
+                  required
+                  className="w-full bg-gray-800 border border-gray-600 p-2 rounded-lg text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  User ID
+                </label>
+                <input
+                  type="text"
+                  placeholder="Enter user ID"
+                  value={giftForm.ui_id}
+                  onChange={(e) => setGiftForm({ ...giftForm, ui_id: e.target.value })}
+                  required
+                  className="w-full bg-gray-800 border border-gray-600 p-2 rounded-lg text-white"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-sm font-medium text-gray-300 mb-1">
+                  Duration
+                </label>
+                <select
+                  value={giftForm.durication}
+                  onChange={(e) => setGiftForm({ ...giftForm, durication: e.target.value })}
+                  className="w-full bg-gray-800 border border-gray-600 p-2 rounded-lg text-white"
+                >
+                  <option value="7day">7 Days</option>
+                  <option value="14day">14 Days</option>
+                  <option value="30day">30 Days</option>
+                </select>
+              </div>
+              
+              {giftMessage && (
+                <div className={`p-3 rounded-lg text-center ${
+                  giftMessage.includes("success") 
+                    ? "bg-green-900 text-green-300" 
+                    : "bg-red-900 text-red-300"
+                }`}>
+                  {giftMessage}
+                </div>
+              )}
+              
+              <button
+                type="submit"
+                disabled={giftLoading}
+                className="w-full bg-gradient-to-r from-green-500 to-teal-600 py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {giftLoading ? (
+                  <>
+                    <Loader2 className="animate-spin" size={20} />
+                    Sending Gift...
+                  </>
+                ) : (
+                  "Send Gift"
                 )}
               </button>
             </form>
