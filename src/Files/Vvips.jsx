@@ -17,7 +17,6 @@ export default function Vvips() {
   const [form, setForm] = useState({
     ui_id: "",
     vipTital: "",
-    vipDescription: "",
     vpiframe: null,
     pic: null,
     bubbleChat: null,
@@ -202,7 +201,6 @@ export default function Vvips() {
       const payload = {
         ui_id: form.ui_id,
         vipTital: form.vipTital,
-        vipDescription: form.vipDescription,
         vpiframe: frameUrl,
         pic: picUrl,
         bubbleChat: bubbleUrl,
@@ -231,7 +229,7 @@ export default function Vvips() {
       setForm({
         ui_id: userData?.ui_id || "",
         vipTital: "",
-        vipDescription: "",
+      
         vpiframe: null,
         pic: null,
         bubbleChat: null,
@@ -272,7 +270,6 @@ export default function Vvips() {
     setForm({
       ui_id: item.ui_id || (userData?.ui_id || ""),
       vipTital: item.vipTital || "",
-      vipDescription: item.vipDescription || "",
       vpiframe: item.vpiframe || null,
       pic: item.pic || null,
       bubbleChat: item.bubbleChat || null,
@@ -545,7 +542,6 @@ export default function Vvips() {
               setForm({
                 ui_id: userData?.ui_id || "",
                 vipTital: "",
-                vipDescription: "",
                 vpiframe: null,
                 pic: null,
                 bubbleChat: null,
@@ -611,7 +607,7 @@ export default function Vvips() {
             )}
             <div>
               <h4 className="text-lg font-semibold mb-1 text-yellow-300">{item.vipTital}</h4>
-              <p className="text-sm text-gray-400 mb-2">{item.vipDescription}</p>
+            
               <p className="text-sm text-gray-400">
                 💰 Price: ${item.price} | 📅 Days: {item.days}
               </p>
@@ -694,14 +690,7 @@ export default function Vvips() {
                 />
               </div>
               
-              <textarea
-                placeholder="VIP Description"
-                value={form.vipDescription}
-                onChange={(e) => setForm({ ...form, vipDescription: e.target.value })}
-                required
-                className="w-full bg-gray-800 border border-gray-600 p-2 rounded-lg text-white"
-                rows="3"
-              />
+             
               
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <input
