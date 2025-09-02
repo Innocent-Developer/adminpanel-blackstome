@@ -26,6 +26,25 @@ const GiftAdminPage = () => {
     }
   };
 
+  const handleDeleteGift = async (giftId) => {
+    if (!window.confirm("Are you sure you want to delete this gift?")) return;
+
+    try {
+      const res = await axios.delete(
+        `https://www.blackstonevoicechatroom.online/api/v2/admin/gift/delete/${giftId}`
+      );
+      
+      if (res.data.success) {
+        toast.success("Gift deleted successfully!");
+        fetchGifts(); // Refresh the gift list
+      } else {
+        toast.error("Failed to delete gift");
+      }
+    } catch (err) {
+      toast.error("Error deleting gift");
+    }
+  };
+
   useEffect(() => {
     fetchGifts();
   }, []);
@@ -61,35 +80,35 @@ const GiftAdminPage = () => {
   };
 
   const handleFileUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
+    const file = e.target.files[0];
+    if (!file) return;
 
-  const formData = new FormData();
-  formData.append("file", file); // Make sure it's a Blob
-  formData.append("UPLOADCARE_STORE", "1");
-  formData.append("UPLOADCARE_PUB_KEY", "d005a40425905b107dec"); // Replace if your key is different
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("UPLOADCARE_STORE", "1");
+    formData.append("UPLOADCARE_PUB_KEY", "d005a40425905b107dec");
 
-  setIsUploadingFile(true);
-  try {
-    const res = await fetch("https://upload.uploadcare.com/base/", {
-      method: "POST",
-      body: formData,
-    });
+    setIsUploadingFile(true);
+    try {
+      const res = await fetch("https://upload.uploadcare.com/base/", {
+        method: "POST",
+        body: formData,
+      });
 
-    const data = await res.json();
-    if (data.error) throw new Error(data.error.content);
+      const data = await res.json();
+      if (data.error) throw new Error(data.error.content);
 
-    setForm((prev) => ({
-      ...prev,
-      giftFile: `https://ucarecdn.com/${data.file}/`,
-    }));
-    toast.success("File uploaded!");
-  } catch (err) {
-    toast.error(`File upload failed: ${err.message}`);
-  } finally {
-    setIsUploadingFile(false);
-  }
-};
+      setForm((prev) => ({
+        ...prev,
+        giftFile: `https://ucarecdn.com/${data.file}/`,
+      }));
+      toast.success("File uploaded!");
+    } catch (err) {
+      toast.error(`File upload failed: ${err.message}`);
+    } finally {
+      setIsUploadingFile(false);
+    }
+  };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -120,7 +139,7 @@ const GiftAdminPage = () => {
   };
 
   return (
-    <div className="p-6 min-h-screen bg-[#121212] text-yellow-400 relative mt-6" >
+    <div className="p-6 min-h-screen bg-[#121212] text-yellow-400 relative mt-6">
       <Toaster position="top-right" />
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-3xl font-bold">🎁 Gift Manager</h2>
@@ -142,6 +161,7 @@ const GiftAdminPage = () => {
               <th className="p-3">Category</th>
               <th className="p-3">Image</th>
               <th className="p-3">File</th>
+              <th className="p-3">Action</th>
             </tr>
           </thead>
           <tbody>
@@ -169,6 +189,14 @@ const GiftAdminPage = () => {
                   >
                     View File
                   </a>
+                </td>
+                <td className="p-3">
+                  <button
+                    onClick={() => handleDeleteGift(gift._id)}
+                    className="bg-red-600 text-white px-3 py-1 rounded hover:bg-red-500 transition"
+                  >
+                    Delete
+                  </button>
                 </td>
               </tr>
             ))}
