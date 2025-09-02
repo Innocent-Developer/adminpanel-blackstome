@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from "react";
-import { Trash2, Edit, X, Loader2, Plus, Crown } from "lucide-react";
+import { Trash2, Edit, X, Loader2, Plus, Crown, Gift } from "lucide-react";
 
 // API endpoints
 const BASE_URL = "https://www.blackstonevoicechatroom.online";
@@ -9,9 +9,10 @@ const VIP_API = {
   UPDATE: `${BASE_URL}/admin/update/vvpis/item`,
   DELETE: `${BASE_URL}/admin/delete/vvpis/item`,
   UPLOAD: `${BASE_URL}/upload/file`,
+  SEND_GIFT: `${BASE_URL}/admin/send/vvpis/item`,
 };
 
-export default function Vvips() {
+export default function Vvips_model() {
   const [items, setItems] = useState([]);
   const [userData, setUserData] = useState(null);
   const [form, setForm] = useState({
@@ -45,6 +46,14 @@ export default function Vvips() {
   const [bubbleUploadError, setBubbleUploadError] = useState(null);
   const [giftUploadError, setGiftUploadError] = useState(null);
   const [headwareUploadError, setHeadwareUploadError] = useState(null);
+  
+  // Gift sending state
+  const [showGiftModal, setShowGiftModal] = useState(false);
+  const [giftForm, setGiftForm] = useState({
+    recipientId: "",
+    itemId: ""
+  });
+  const [sendingGift, setSendingGift] = useState(false);
 
   const canvasRef = useRef(null);
   const playerRef = useRef(null);
@@ -78,6 +87,53 @@ export default function Vvips() {
     } finally {
       setLoading(false);
     }
+  };
+
+  // Handle sending gift to user
+  const handleSendGift = async (e) => {
+    e.preventDefault();
+    setSendingGift(true);
+    
+    try {
+      const payload = {
+        ui_id: giftForm.recipientId,
+        id: giftForm.itemId
+      };
+      
+      const res = await fetch(VIP_API.SEND_GIFT, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      if (!res.ok) {
+        const errorData = await res.json();
+        throw new Error(errorData.message || "Failed to send gift");
+      }
+
+      const result = await res.json();
+      alert(result.message || "Gift sent successfully!");
+      
+      // Reset form and close modal
+      setGiftForm({
+        recipientId: "",
+        itemId: ""
+      });
+      setShowGiftModal(false);
+    } catch (err) {
+      alert(err.message || "An error occurred while sending the gift");
+    } finally {
+      setSendingGift(false);
+    }
+  };
+
+  // Open gift modal with item ID pre-filled
+  const openGiftModal = (itemId) => {
+    setGiftForm({
+      recipientId: "",
+      itemId: itemId
+    });
+    setShowGiftModal(true);
   };
 
   // Generic file upload function
@@ -637,6 +693,12 @@ export default function Vvips() {
                 >
                   <Trash2 size={16} />
                 </button>
+                <button
+                  onClick={() => openGiftModal(item._id)}
+                  className="bg-green-500 hover:bg-green-600 p-2 rounded-md"
+                >
+                  <Gift size={16} />
+                </button>
               </div>
             </div>
           </div>
@@ -882,32 +944,77 @@ export default function Vvips() {
                 {renderImagePreview('profileheadware', headwarePreviewUrl, form.profileheadware)}
               </div>
               
-              <button
-                type="submit"
-                disabled={loading || 
-                  (frameUploadProgress > 0 && frameUploadProgress < 100) || 
-                  (picUploadProgress > 0 && picUploadProgress < 100) ||
-                  (bubbleUploadProgress > 0 && bubbleUploadProgress < 100) ||
-                  (giftUploadProgress > 0 && giftUploadProgress < 100) ||
-                  (headwareUploadProgress > 0 && headwareUploadProgress < 100)
-                }
-                className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 py-2 rounded-lg text-white font-semibold flex items-center justify-center gap-2 hover:opacity-90 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? (
-                  <>
-                    <Loader2 className="animate-spin" size={20} />
-                    {isEditMode ? "Updating..." : "Creating..."}
-                  </>
-                ) : isEditMode ? (
-                  "Update VIP Item"
-                ) : (
-                  "Create VIP Item"
-                )}
-              </button>
+             <button
+  type="submit"
+  disabled={
+    loading ||
+    (frameUploadProgress > 0 && frameUploadProgress < 100) ||
+    (picUploadProgress > 0 && picUploadProgress < 100) ||
+    (bubbleUploadProgress > 0 && bubbleUploadProgress < 100)
+  }
+  className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
+>
+  Submit
+</button>
+
             </form>
           </div>
         </div>
       )}
+
+      {/* Send Gift Modal */}
+      {showGiftModal && (
+  <div className="fixed inset-0 bg-black bg-opacity-70 flex items-center justify-center z-50 p-4">
+    <div className="bg-[#121225] p-6 rounded-2xl w-full max-w-md relative border border-yellow-800">
+      <button
+        onClick={() => setShowGiftModal(false)}
+        className="absolute top-4 right-4 text-white hover:text-red-400"
+      >
+        <X size={24} />
+      </button>
+      <h2 className="text-xl font-bold mb-4 text-center text-yellow-400">
+        Send VIP Gift
+      </h2>
+      <form onSubmit={handleSendGift} className="space-y-4">
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            Recipient User ID
+          </label>
+          <input
+            type="text"
+            value={giftForm.recipientId}
+            onChange={(e) => setGiftForm({ ...giftForm, recipientId: e.target.value })}
+            required
+            className="w-full bg-gray-800 border border-gray-600 p-2 rounded-lg text-white"
+          />
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-300 mb-1">
+            VIP Item ID
+          </label>
+          <input
+            type="text"
+            value={giftForm.vipItemId}
+            readOnly
+            className="w-full bg-gray-700 border border-gray-600 p-2 rounded-lg text-gray-400 cursor-not-allowed"
+          />
+        </div>
+        <button
+          type="submit"
+          disabled={loading}
+          className="w-full bg-gradient-to-r from-yellow-500 to-orange-600 text-white py-3 rounded-lg font-semibold hover:opacity-90 transition disabled:opacity-50"
+        >
+          {loading ? (
+            <Loader2 className="animate-spin mx-auto" size={20} />
+          ) : (
+            "Send Gift"
+          )}
+        </button>
+      </form>
+    </div>
+  </div>
+)}
     </div>
   );
-}
+};
+
