@@ -8,22 +8,22 @@ const AgencyManager = () => {
 
   const [agencies, setAgencies] = useState([]);
   const [showModal, setShowModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
-  const [agencyToDelete, setAgencyToDelete] = useState(null);
+  const [showDetailsModal, setShowDetailsModal] = useState(false);
+  const [agencyDetails, setAgencyDetails] = useState(null);
+  const [loadingDetails, setLoadingDetails] = useState(false);
   const [form, setForm] = useState({
     agencyName: "",
     agencyLogo: "",
   });
   const [loading, setLoading] = useState(false);
   const [fetching, setFetching] = useState(true);
-  const [deleting, setDeleting] = useState(false);
 
   // Fetch all agencies
   const fetchAgencies = async () => {
     setFetching(true);
     try {
       const res = await axios.get(
-        "https://www.blackstonevoicechatroom.online/api/v1/get/all/agency"
+        "https://www.blackstonevoicechatroom.online/api/v1/get/all/agency" // Changed to HTTPS
       );
       setAgencies(res.data.data || []);
     } catch (err) {
@@ -37,6 +37,26 @@ const AgencyManager = () => {
   useEffect(() => {
     fetchAgencies();
   }, []);
+
+  // Fetch agency details
+  const fetchAgencyDetails = async (agencyId) => {
+    setLoadingDetails(true);
+    try {
+      const res = await axios.get(
+        "https://www.blackstonevoicechatroom.online/api/v1/agency/record",
+        { 
+          params: { agencyId } 
+        }
+      );
+      setAgencyDetails(res.data);
+      setShowDetailsModal(true);
+    } catch (err) {
+      console.error("Failed to fetch agency details:", err);
+      alert("Failed to fetch agency details.");
+    } finally {
+      setLoadingDetails(false);
+    }
+  };
 
   // Upload image to Cloudinary
   const handleUploadLogo = async (e) => {
@@ -75,11 +95,11 @@ const AgencyManager = () => {
       ui_id: ui_id,
     };
 
-    console.log("Submitting agency:", submission);
+    console.log("Submitting agency:", submission); // Debug log
 
     try {
       const res = await axios.post(
-        "https://www.blackstonevoicechatroom.online/api/v1/agency/create",
+        "https://www.blackstonevoicechatroom.online/api/v1/agency/create", // Changed to HTTPS
         submission
       );
       alert("Agency created successfully.");
@@ -95,42 +115,6 @@ const AgencyManager = () => {
         alert("Server is not responding.");
       }
     }
-  };
-
-  // Delete agency
-  const handleDeleteAgency = async () => {
-    if (!agencyToDelete) return;
-    
-    setDeleting(true);
-    try {
-      const res = await axios.delete(
-        `https://www.blackstonevoicechatroom.online/api/v1/agency/delete/${agencyToDelete._id}`
-      );
-      
-      if (res.data.success) {
-        alert("Agency deleted successfully.");
-        setShowDeleteModal(false);
-        setAgencyToDelete(null);
-        fetchAgencies();
-      } else {
-        alert(res.data.message || "Failed to delete agency.");
-      }
-    } catch (err) {
-      console.error("Agency deletion failed:", err);
-      if (err.response) {
-        alert(err.response.data.message || "Agency deletion failed.");
-      } else {
-        alert("Server is not responding.");
-      }
-    } finally {
-      setDeleting(false);
-    }
-  };
-
-  // Open delete confirmation modal
-  const confirmDelete = (agency) => {
-    setAgencyToDelete(agency);
-    setShowDeleteModal(true);
   };
 
   return (
@@ -161,27 +145,16 @@ const AgencyManager = () => {
           {agencies.map((agency) => (
             <div
               key={agency._id}
-              className="bg-[#1f1f1f] p-4 rounded-lg shadow hover:shadow-lg transition relative"
+              className="bg-[#1f1f1f] p-4 rounded-lg shadow hover:shadow-lg transition"
             >
-              {/* Delete Button */}
-              <button
-                onClick={() => confirmDelete(agency)}
-                className="absolute top-2 right-2 bg-red-600 hover:bg-red-700 text-white p-1 rounded-full"
-                title="Delete Agency"
-              >
-                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                  <path fillRule="evenodd" d="M9 2a1 1 0 00-.894.553L7.382 4H4a1 1 0 000 2v10a2 2 0 002 2h8a2 2 0 002-2V6a1 1 0 100-2h-3.382l-.724-1.447A1 1 0 0011 2H9zM7 8a1 1 0 012 0v6a1 1 0 11-2 0V8zm5-1a1 1 0 00-1 1v6a1 1 0 102 0V8a1 1 0 00-1-1z" clipRule="evenodd" />
-                </svg>
-              </button>
-              
               <img
                 src={agency.agencyLogo}
                 alt="Logo"
-                className="h-20 w-20 rounded-full object-cover mb-3 mx-auto"
+                className="h-20 w-20 rounded-full object-cover mb-3"
               />
-              <h3 className="text-lg font-bold text-center">{agency.agencyName}</h3>
+              <h3 className="text-lg font-bold">{agency.agencyName}</h3>
               <p className="text-sm text-gray-400">
-                ID: {agency.agencyId || "Unknown"}
+                ID : {agency.agencyId || "Unknown"}
               </p>
               <p className="text-sm text-gray-400">
                 Creator: {agency.name || "Unknown"}
@@ -189,6 +162,15 @@ const AgencyManager = () => {
               <p className="text-sm text-gray-400">
                 Creator ID: {agency.createrId || "Unknown"}
               </p>
+              
+              {/* View Details Button */}
+              <button
+                onClick={() => fetchAgencyDetails(agency.agencyId)}
+                className="mt-3 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1 rounded text-sm"
+                disabled={loadingDetails}
+              >
+                {loadingDetails ? "Loading..." : "View Details"}
+              </button>
             </div>
           ))}
         </div>
@@ -225,7 +207,7 @@ const AgencyManager = () => {
               <img
                 src={form.agencyLogo}
                 alt="Preview"
-                className="h-24 w-24 object-cover rounded mb-3 mx-auto"
+                className="h-24 w-24 object-cover rounded mb-3"
               />
             )}
 
@@ -248,56 +230,75 @@ const AgencyManager = () => {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && agencyToDelete && (
-        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center">
-          <div className="bg-[#1c1c1c] p-6 rounded-lg w-full max-w-md">
-            <h2 className="text-xl font-semibold text-red-400 mb-4">
-              Confirm Delete
-            </h2>
-            
-            <div className="flex items-center mb-4">
-              <img
-                src={agencyToDelete.agencyLogo}
-                alt="Logo"
-                className="h-16 w-16 rounded-full object-cover mr-4"
-              />
-              <div>
-                <h3 className="text-lg font-bold">{agencyToDelete.agencyName}</h3>
-                <p className="text-sm text-gray-400">ID: {agencyToDelete.agencyId}</p>
-              </div>
-            </div>
-            
-            <p className="text-gray-300 mb-4">
-              Are you sure you want to delete this agency? This action cannot be undone.
-            </p>
-
-            <div className="flex justify-end gap-2">
+      {/* Agency Details Modal */}
+      {showDetailsModal && agencyDetails && (
+        <div className="fixed inset-0 bg-black bg-opacity-70 z-50 flex justify-center items-center p-4">
+          <div className="bg-[#1c1c1c] p-6 rounded-lg w-full max-w-2xl max-h-[80vh] overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h2 className="text-xl font-semibold text-blue-400">
+                Agency Details
+              </h2>
               <button
                 onClick={() => {
-                  setShowDeleteModal(false);
-                  setAgencyToDelete(null);
+                  setShowDetailsModal(false);
+                  setAgencyDetails(null);
                 }}
-                className="px-4 py-2 bg-gray-600 hover:bg-gray-700 rounded"
-                disabled={deleting}
+                className="text-gray-400 hover:text-white"
               >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteAgency}
-                className="px-4 py-2 bg-red-600 hover:bg-red-700 rounded flex items-center"
-                disabled={deleting}
-              >
-                {deleting ? (
-                  <>
-                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
-                    Deleting...
-                  </>
-                ) : (
-                  "Delete Agency"
-                )}
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
+
+            {/* Agency Info */}
+            <div className="mb-6 p-4 bg-[#2a2a2a] rounded-lg">
+              <h3 className="text-lg font-semibold mb-3 text-orange-400">Agency Information</h3>
+              <div className="flex items-start mb-4">
+                <img
+                  src={agencyDetails.agency.agencyLogo}
+                  alt="Agency Logo"
+                  className="h-16 w-16 rounded-full object-cover mr-4"
+                />
+                <div>
+                  <p className="font-medium">Name: {agencyDetails.agency.agencyName}</p>
+                  <p className="text-sm text-gray-400">ID: {agencyDetails.agency.agencyId}</p>
+                  <p className="text-sm text-gray-400">Created: {new Date(agencyDetails.agency.createdAt).toLocaleDateString()}</p>
+                </div>
+              </div>
+            </div>
+
+            {/* Creator Info */}
+            {agencyDetails.creator && (
+              <div className="mb-6 p-4 bg-[#2a2a2a] rounded-lg">
+                <h3 className="text-lg font-semibold mb-3 text-orange-400">Creator Information</h3>
+                <p className="mb-1">Name: {agencyDetails.creator.name}</p>
+                <p className="mb-1 text-sm text-gray-400">User ID: {agencyDetails.creator.ui_id}</p>
+                <p className="text-sm text-gray-400">Email: {agencyDetails.creator.email}</p>
+              </div>
+            )}
+
+            {/* Joined Users */}
+            {agencyDetails.joinedUsers && agencyDetails.joinedUsers.length > 0 && (
+              <div className="p-4 bg-[#2a2a2a] rounded-lg">
+                <h3 className="text-lg font-semibold mb-3 text-orange-400">
+                  Joined Users ({agencyDetails.joinedUsers.length})
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                  {agencyDetails.joinedUsers.map((user) => (
+                    <div key={user.ui_id} className="p-3 bg-[#1c1c1c] rounded">
+                      <p className="font-medium">{user.name}</p>
+                      <p className="text-sm text-gray-400">ID: {user.ui_id}</p>
+                      <p className="text-sm text-gray-400">Email: {user.email}</p>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {agencyDetails.joinedUsers && agencyDetails.joinedUsers.length === 0 && (
+              <p className="text-gray-400 italic">No users have joined this agency yet.</p>
+            )}
           </div>
         </div>
       )}
