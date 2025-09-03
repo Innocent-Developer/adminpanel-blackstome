@@ -45,7 +45,7 @@ const AgencyManager = () => {
       const res = await axios.get(
         "https://www.blackstonevoicechatroom.online/api/v1/agency/record",
         { 
-          params: { agencyId } 
+          agencyId: Number(agencyId) ,
         }
       );
       setAgencyDetails(res.data);
