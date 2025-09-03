@@ -23,7 +23,7 @@ const AgencyManager = () => {
     setFetching(true);
     try {
       const res = await axios.get(
-        "https://www.blackstonevoicechatroom.online/api/v1/get/all/agency" // Changed to HTTPS
+        "https://www.blackstonevoicechatroom.online/api/v1/get/all/agency"
       );
       setAgencies(res.data.data || []);
     } catch (err) {
@@ -38,21 +38,19 @@ const AgencyManager = () => {
     fetchAgencies();
   }, []);
 
-  // Fetch agency details
+  // Fetch agency details - FIXED: using POST with agencyId in request body
   const fetchAgencyDetails = async (agencyId) => {
     setLoadingDetails(true);
     try {
-      const res = await axios.get(
+      const res = await axios.post(
         "https://www.blackstonevoicechatroom.online/api/v1/agency/record",
-        { 
-          agencyId: Number(agencyId) ,
-        }
+        { agencyId: Number(agencyId) } // Send agencyId in request body as number
       );
       setAgencyDetails(res.data);
       setShowDetailsModal(true);
     } catch (err) {
       console.error("Failed to fetch agency details:", err);
-      alert("Failed to fetch agency details.");
+      alert("Failed to fetch agency details. Please try again.");
     } finally {
       setLoadingDetails(false);
     }
@@ -95,11 +93,11 @@ const AgencyManager = () => {
       ui_id: ui_id,
     };
 
-    console.log("Submitting agency:", submission); // Debug log
+    console.log("Submitting agency:", submission);
 
     try {
       const res = await axios.post(
-        "https://www.blackstonevoicechatroom.online/api/v1/agency/create", // Changed to HTTPS
+        "https://www.blackstonevoicechatroom.online/api/v1/agency/create",
         submission
       );
       alert("Agency created successfully.");
