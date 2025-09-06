@@ -1,6 +1,5 @@
 import React, { useEffect, useState } from "react";
-
-import { Menu } from "lucide-react"; // You can use any icon library or replace with text/icon
+import { Menu, Trash2 } from "lucide-react"; // Added Trash2 icon for delete button
 
 const AllBanners = () => {
   const [banners, setBanners] = useState([]);
@@ -10,7 +9,8 @@ const AllBanners = () => {
   const [newBanner, setNewBanner] = useState({ image: "", url: "", expiry: "" });
   const [filterStatus, setFilterStatus] = useState("all");
   const [searchTerm, setSearchTerm] = useState("");
-  const [sidebarOpen, setSidebarOpen] = useState(false); // sidebar toggle state
+  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [deletingId, setDeletingId] = useState(null); // Track which banner is being deleted
 
   const fetchBanners = async () => {
     try {
@@ -84,6 +84,32 @@ const AllBanners = () => {
     }
   };
 
+  const handleDelete = async (id) => {
+    if (!window.confirm("Are you sure you want to delete this banner?")) {
+      return;
+    }
+
+    try {
+      setDeletingId(id);
+      const response = await fetch(`https://www.blackstonevoicechatroom.online/admin/delete/banner/${id}`, {
+        method: "DELETE",
+      });
+
+      const result = await response.json();
+      if (response.ok) {
+        alert("Banner deleted successfully.");
+        fetchBanners(); // Refresh the list
+      } else {
+        alert(result.message || "Failed to delete banner.");
+      }
+    } catch (error) {
+      console.error("Delete failed:", error);
+      alert("Delete failed: " + error.message);
+    } finally {
+      setDeletingId(null);
+    }
+  };
+
   const filteredBanners = banners.filter((banner) => {
     const matchesStatus =
       filterStatus === "all" ? true : banner.status === filterStatus;
@@ -147,12 +173,13 @@ const AllBanners = () => {
                 <th className="p-2 border border-gray-700">Status</th>
                 <th className="p-2 border border-gray-700">Expiry</th>
                 <th className="p-2 border border-gray-700">Date</th>
+                <th className="p-2 border border-gray-700">Actions</th> {/* Added Actions column */}
               </tr>
             </thead>
             <tbody>
               {filteredBanners.length === 0 ? (
                 <tr>
-                  <td colSpan="6" className="p-4 text-gray-400">
+                  <td colSpan="7" className="p-4 text-gray-400">
                     No banners found.
                   </td>
                 </tr>
@@ -190,6 +217,20 @@ const AllBanners = () => {
                     <td className="p-2 border border-gray-700 text-sm">
                       {new Date(banner.createdAt).toLocaleTimeString()}{" "}
                       {new Date(banner.createdAt).toLocaleDateString()}
+                    </td>
+                    <td className="p-2 border border-gray-700">
+                      <button
+                        onClick={() => handleDelete(banner._id)}
+                        disabled={deletingId === banner._id}
+                        className="bg-red-600 hover:bg-red-700 text-white p-2 rounded flex items-center justify-center mx-auto"
+                        title="Delete banner"
+                      >
+                        {deletingId === banner._id ? (
+                          "Deleting..."
+                        ) : (
+                          <Trash2 size={16} />
+                        )}
+                      </button>
                     </td>
                   </tr>
                 ))
